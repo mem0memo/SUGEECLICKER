@@ -34,21 +34,21 @@ let tick = 0;
 // autoClick: trueの施設はproductionではなくclickValue×countを毎秒加算
 // autoTrade: trueの施設は毎秒自動売買を行う
 const BUILDINGS = [
-    { id: 'vegetable', name: '野菜農園',      desc: '農業×テクノロジーで世界を変える（言いすぎ）',          icon: '🥬', basePrice: 10,      baseProduction: 0.1,  multiplier: 1.15 },
-    { id: 'wagyu',     name: '和牛農場',      desc: '最高級の和牛を育てる。肉は権力の象徴だ',              icon: '🐄', basePrice: 60,      baseProduction: 0.5,  multiplier: 1.15 },
-    { id: 'sns',       name: 'SNS配信局',     desc: '毎日更新が信者を生む。所持数×クリック力/秒で自動稼ぎ', icon: '📱', basePrice: 300,     baseProduction: 0,    multiplier: 1.15, autoClick: true },
-    { id: 'health',    name: 'お笑いプロダクション', desc: 'R入りグランプリを毎年輩出する笑いの工場。笑いは最強のコンテンツだ', icon: '🎤', basePrice: 2000,    baseProduction: 4,    multiplier: 1.15 },
-    { id: 'rocket',    name: 'ロケット工場',  desc: '宇宙から地球を見下ろす男の夢。規制なんか関係ない',   icon: '🚀', basePrice: 15000,   baseProduction: 12,   multiplier: 1.15 },
-    { id: 'blog',      name: 'ブログポータル', desc: '某SNS以前から俺のブログは人気だった。記事が金になる', icon: '📝', basePrice: 80000,   baseProduction: 35,   multiplier: 1.15 },
-    { id: 'mailmag',   name: '有料メルマガ',  desc: '月額課金で信者を囲い込め。コンテンツは俺の人生そのものだ', icon: '💌', basePrice: 200000,  baseProduction: 65,   multiplier: 1.15 },
-    { id: 'media',     name: 'メディア帝国',  desc: '情報こそ21世紀の石油だ。全チャンネル買収を目指せ',  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15 },
-    { id: 'salon',     name: '夜の社交場',    desc: '酒と人脈と謎の出会い。一杯飲んでちょめちょめ',       icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15 },
-    { id: 'newhalf',   name: 'ニューハーフ', desc: '夜の社交場で出会った敏腕トレーダー。株式市場を誰より読む。保有数=毎秒の株式自動売買数', icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoTradeStocks: true },
-    { id: 'exchange',  name: '取引所',        desc: '価格レンジを読んで自動売買。所持数=同時取引数（暗号資産＋株式）', icon: '💰', basePrice: 8000000, baseProduction: 0,    multiplier: 1.15, autoTrade: true },
+    { id: 'vegetable', name: '野菜農園',      desc: '農業で世界変革（言いすぎ）',          icon: '🥬', basePrice: 10,      baseProduction: 0.1,  multiplier: 1.15, unlockCondition: null },
+    { id: 'wagyu',     name: '和牛農場',      desc: '肉は権力の象徴',                      icon: '🐄', basePrice: 60,      baseProduction: 0.5,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1 },
+    { id: 'sns',       name: 'SNS配信局',     desc: '所持数×クリック/秒 自動稼ぎ',         icon: '📱', basePrice: 300,     baseProduction: 0,    multiplier: 1.15, autoClick: true,       unlockCondition: gs => (gs.buildings['wagyu']?.count ?? 0) >= 1 },
+    { id: 'health',    name: 'お笑いプロダクション', desc: '笑いは最強のコンテンツ',        icon: '🎤', basePrice: 2000,    baseProduction: 4,    multiplier: 1.15, unlockCondition: gs => (gs.buildings['sns']?.count ?? 0) >= 1 },
+    { id: 'rocket',    name: 'ロケット工場',  desc: '規制なんか関係ない',                  icon: '🚀', basePrice: 15000,   baseProduction: 12,   multiplier: 1.15, unlockCondition: gs => (gs.buildings['health']?.count ?? 0) >= 1 },
+    { id: 'blog',      name: 'ブログポータル', desc: '記事が金になる',                     icon: '📝', basePrice: 80000,   baseProduction: 35,   multiplier: 1.15, unlockCondition: gs => (gs.buildings['rocket']?.count ?? 0) >= 1 },
+    { id: 'mailmag',   name: '有料メルマガ',  desc: '月額課金で信者を囲い込め',            icon: '💌', basePrice: 200000,  baseProduction: 65,   multiplier: 1.15, unlockCondition: gs => (gs.buildings['blog']?.count ?? 0) >= 1 },
+    { id: 'media',     name: 'メディア帝国',  desc: '情報は21世紀の石油',                  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['mailmag']?.count ?? 0) >= 1 },
+    { id: 'salon',     name: '夜の社交場',    desc: '一杯飲んでちょめちょめ',              icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['media']?.count ?? 0) >= 1 },
+    { id: 'newhalf',   name: 'ニューハーフ',  desc: '株式自動売買。保有数=毎秒取引数',     icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoTradeStocks: true, unlockCondition: gs => (gs.buildings['salon']?.count ?? 0) >= 1 },
+    { id: 'exchange',  name: '取引所',        desc: '全資産自動売買。所持数=同時取引数',   icon: '💰', basePrice: 8000000, baseProduction: 0,    multiplier: 1.15, autoTrade: true,       unlockCondition: gs => (gs.buildings['newhalf']?.count ?? 0) >= 1 },
 ];
 
-// ===== 暗号資産定義（5種）=====
-// 解放順: 普通のトークン → すごくないトークン → 感想トークン → すげぇトークン → サナオトークン
+// ===== 暗号資産定義（4種）=====
+// 解放順: 普通のトークン → すごくないトークン → すげぇトークン → サナオトークン
 // bearBias: 0.5=中立, 0.7=ベア寄り, 0.8=ほぼ常にベア
 const CRYPTOS = [
     {
@@ -78,20 +78,6 @@ const CRYPTOS = [
         bearBias: 0.48,
         unlockCondition: gs => (gs.buildings['wagyu']?.count ?? 0) >= 5,
         unlockDesc: '和牛農場を5個購入で解放',
-    },
-    {
-        id: 'kansou',
-        name: '感想トークン',
-        desc: '感想を資産化した革命的通貨\n保有数 × 10/秒を生産',
-        icon: '💬',
-        basePrice: 80000,
-        production: 10,
-        trendStrength: 20000,
-        noise: 15000,
-        minPrice: 8000,
-        bearBias: 0.48,
-        unlockCondition: gs => (gs.buildings['health']?.count ?? 0) >= 3,
-        unlockDesc: 'お笑いプロダクションを3個購入で解放',
     },
     {
         id: 'sugee',
@@ -205,59 +191,59 @@ const ACHIEVEMENTS = [
 
     // ===== 施設系（中盤）=====
     { id: 'building_15',    name: '施設コレクター',      icon: '🏗️',
-      comment: 'まだまだ規模が足りない',            condition: '施設を合計15個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 15,
+      comment: 'まだまだ規模が足りない',            condition: '施設を合計100個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 100,
       bonus: 25 },
 
     { id: 'wagyu_ranch',    name: '和牛農場の拡大',      icon: '🥩',
-      comment: 'サシが入るまで育てろ',              condition: '和牛農場を15個購入',
-      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 15,
+      comment: 'サシが入るまで育てろ',              condition: '和牛農場を100個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 100,
       bonus: 60 },
 
     { id: 'blog_empire',    name: 'ブログの帝王',        icon: '📝',
-      comment: '某社に先を越されたが負けてない',    condition: 'ブログポータルを5個購入',
-      check: gs => (gs.buildings['blog']?.count ?? 0) >= 5,
+      comment: '某社に先を越されたが負けてない',    condition: 'ブログポータルを50個購入',
+      check: gs => (gs.buildings['blog']?.count ?? 0) >= 50,
       bonus: 200 },
 
     { id: 'rocket_mass',    name: 'ロケット量産体制',    icon: '🚀',
-      comment: '空を見上げるな、宇宙を見ろ',       condition: 'ロケット工場を8個購入',
-      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 8,
+      comment: '空を見上げるな、宇宙を見ろ',       condition: 'ロケット工場を80個購入',
+      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 80,
       bonus: 300 },
 
     { id: 'salon_legend',   name: '夜の伝説',            icon: '🌙',
-      comment: '一杯飲んでちょめちょめ（詳細不明）', condition: '夜の社交場を3個購入',
-      check: gs => (gs.buildings['salon']?.count ?? 0) >= 3,
+      comment: '一杯飲んでちょめちょめ（詳細不明）', condition: '夜の社交場を30個購入',
+      check: gs => (gs.buildings['salon']?.count ?? 0) >= 30,
       bonus: 600 },
 
     { id: 'night_diversity', name: '夜の多様な出会い',   icon: '💃',
-      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: 'ニューハーフを1人雇用',
-      check: gs => (gs.buildings['newhalf']?.count ?? 0) >= 1,
+      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: 'ニューハーフを50人雇用',
+      check: gs => (gs.buildings['newhalf']?.count ?? 0) >= 50,
       bonus: 1200 },
 
     { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤',
-      comment: '一芸で笑いを取ったら起業家より稼げた', condition: 'お笑いプロダクションを10個購入',
-      check: gs => (gs.buildings['health']?.count ?? 0) >= 10,
+      comment: '一芸で笑いを取ったら起業家より稼げた', condition: 'お笑いプロダクションを100個購入',
+      check: gs => (gs.buildings['health']?.count ?? 0) >= 100,
       bonus: 400 },
 
     // ===== 施設系（後半）=====
     { id: 'media_empire',   name: 'メディア完全制覇',    icon: '📺',
-      comment: '全チャンネルで俺の顔を流せ',       condition: 'メディア帝国を5個購入',
-      check: gs => (gs.buildings['media']?.count ?? 0) >= 5,
+      comment: '全チャンネルで俺の顔を流せ',       condition: 'メディア帝国を50個購入',
+      check: gs => (gs.buildings['media']?.count ?? 0) >= 50,
       bonus: 800 },
 
     { id: 'exchange_open',  name: '取引所開設',          icon: '💹',
-      comment: '銀行は時代遅れ。論破',              condition: '取引所を1個購入',
-      check: gs => (gs.buildings['exchange']?.count ?? 0) >= 1,
+      comment: '銀行は時代遅れ。論破',              condition: '取引所を20個購入',
+      check: gs => (gs.buildings['exchange']?.count ?? 0) >= 20,
       bonus: 1000 },
 
     { id: 'veggie_farm',    name: '野菜王国の礎',        icon: '🌾',
-      comment: 'ニンジンで世界征服',               condition: '野菜農園を30個購入',
-      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 30,
+      comment: 'ニンジンで世界征服',               condition: '野菜農園を200個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 200,
       bonus: 150 },
 
-    { id: 'building_100',   name: '百施設帝国',          icon: '🏙️',
-      comment: 'もはや一個人の規模じゃない',       condition: '施設を合計100個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 100,
+    { id: 'building_100',   name: '千施設帝国',          icon: '🏙️',
+      comment: 'もはや一個人の規模じゃない',       condition: '施設を合計1000個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 1000,
       bonus: 3000 },
 
     // ===== トークン累計系 =====
@@ -298,20 +284,15 @@ const ACHIEVEMENTS = [
       bonus: 1000 },
 
     { id: 'major_holder',   name: '大株主',              icon: '🤵',
-      comment: '議決権で世界を動かす',             condition: '保有株合計50株以上',
-      check: gs => Object.values(gs.stocks).reduce((a, s) => a + s.owned, 0) >= 50,
+      comment: '議決権で世界を動かす',             condition: '保有株合計500株以上',
+      check: gs => Object.values(gs.stocks).reduce((a, s) => a + s.owned, 0) >= 500,
       bonus: 500 },
 
     // ===== 暗号資産系 =====
     { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐',
-      comment: 'すごくはないが、ないよりマシ',     condition: 'すごくないトークンを5個保有',
-      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 5,
+      comment: 'すごくはないが、ないよりマシ',     condition: 'すごくないトークンを50個保有',
+      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 50,
       bonus: 30 },
-
-    { id: 'kansou_3',       name: '感想家の財産',        icon: '💬',
-      comment: '感想で食っていける時代が来た',     condition: '感想トークンを3個保有',
-      check: gs => (gs.cryptos['kansou']?.owned ?? 0) >= 3,
-      bonus: 500 },
 
     { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀',
       comment: '買えたのか…なぜ？',               condition: 'サナオトークンを1個保有',
@@ -440,11 +421,15 @@ function render() {
     renderStocks();
 }
 
-// 未解放の暗号資産名を「???」に置き換える
-function maskLockedCryptoNames(text) {
+// 未解放の施設・暗号資産名を「???」に置き換える
+function maskLockedNames(text) {
+    BUILDINGS.forEach(b => {
+        if (b.unlockCondition && !b.unlockCondition(GameState)) {
+            text = text.replaceAll(b.name, '???');
+        }
+    });
     CRYPTOS.forEach(c => {
         if (c.unlockCondition && !c.unlockCondition(GameState)) {
-            // 解放されていない場合、名前を伏せる
             text = text.replaceAll(c.name, '???');
         }
     });
@@ -465,7 +450,7 @@ function renderAchievements() {
         item.textContent = unlocked ? ach.icon : '🔒';
         const tooltip = unlocked
             ? `${ach.name}\n${ach.comment}`
-            : `${ach.name}\n条件: ${maskLockedCryptoNames(ach.condition)}`;
+            : `???\n条件: ${maskLockedNames(ach.condition)}`;
         item.setAttribute('data-tooltip', tooltip);
         grid.appendChild(item);
     });
@@ -484,6 +469,23 @@ function renderBuildings() {
     if (!el) return;
     el.innerHTML = '';
     BUILDINGS.forEach(b => {
+        const isUnlocked = !b.unlockCondition || b.unlockCondition(GameState);
+        const card = document.createElement('div');
+
+        if (!isUnlocked) {
+            card.className = 'item-card locked-card';
+            // 解放条件を探す（前の施設名はまだ公開中なので表示可）
+            const prevIdx = BUILDINGS.indexOf(b) - 1;
+            const prevName = prevIdx >= 0 ? BUILDINGS[prevIdx].name : '';
+            card.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${b.icon} ??? 🔒</div>
+                    <div class="item-effect locked-hint">${prevName}を1個購入で解放</div>
+                </div>`;
+            el.appendChild(card);
+            return;
+        }
+
         const count = GameState.buildings[b.id].count;
         const p1    = bulkBuildingPrice(b, 1);
         const p10   = bulkBuildingPrice(b, 10);
@@ -503,7 +505,6 @@ function renderBuildings() {
             effectText = `+${fmt(prod)}/s`;
         }
 
-        const card = document.createElement('div');
         card.className = `item-card ${GameState.tokens < p1 ? 'unaffordable' : ''}`;
         card.setAttribute('data-tooltip', b.desc);
         card.innerHTML = `
