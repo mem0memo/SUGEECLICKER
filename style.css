@@ -7,16 +7,18 @@
 :root {
     --bg-dark: #1a1a1a;
     --bg-darker: #0f0f0f;
-    --panel-bg: #2a2a2a;
-    --panel-light: #333333;
-    --border-color: #404040;
+    --panel-bg: #212121;
+    --panel-light: #2d2d2d;
+    --border-color: #383838;
     --text-primary: #e0e0e0;
-    --text-secondary: #999999;
+    --text-secondary: #888888;
     --accent-color: #4a9d6f;
     --accent-light: #6cb896;
-    --button-color: #3d5c4f;
+    --accent-glow: rgba(74, 157, 111, 0.25);
+    --button-color: #2e4d3f;
     --success-color: #66bb6a;
     --warn-color: #f57c00;
+    --danger-color: #e53935;
 }
 
 body {
@@ -26,52 +28,46 @@ body {
     font-size: 13px;
     line-height: 1.4;
     overflow-x: hidden;
-}
-
-/* ===== トレーダーコンテナ ===== */
-.trader-container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: var(--bg-darker);
-    border: 1px solid var(--border-color);
+}
+
+/* ===== コンテナ ===== */
+.trader-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* ===== ヘッダー ===== */
 .trader-header {
     background: var(--bg-dark);
-    border-bottom: 1px solid var(--border-color);
-    padding: 10px 15px;
+    border-bottom: 2px solid var(--accent-color);
+    padding: 10px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.header-left {
-    flex: 1;
+    flex-shrink: 0;
 }
 
 .game-title {
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-primary);
+    font-size: 1.5em;
+    font-weight: 800;
+    color: var(--accent-light);
     letter-spacing: 1px;
 }
 
 .subtitle {
-    font-size: 0.8em;
+    font-size: 0.75em;
     color: var(--text-secondary);
-    margin-top: 3px;
-}
-
-.header-right {
-    display: flex;
-    gap: 20px;
+    margin-top: 2px;
 }
 
 .status-bar {
     display: flex;
-    gap: 15px;
+    gap: 18px;
 }
 
 .status-item {
@@ -81,156 +77,149 @@ body {
 }
 
 .status-item .label {
-    font-size: 0.75em;
+    font-size: 0.65em;
     color: var(--text-secondary);
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .status-item .value {
-    font-size: 1.1em;
+    font-size: 1em;
     color: var(--accent-light);
-    font-weight: bold;
+    font-weight: 700;
 }
 
 /* ===== 情報バー ===== */
 .info-bar {
     background: var(--panel-bg);
     border-bottom: 1px solid var(--border-color);
-    padding: 8px 15px;
+    padding: 6px 18px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
 .info-item {
     display: flex;
     flex-direction: column;
+    padding: 4px 0;
 }
 
 .info-label {
-    font-size: 0.75em;
+    font-size: 0.65em;
     color: var(--text-secondary);
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
 }
 
 .info-value {
-    font-size: 1.3em;
+    font-size: 1.4em;
     color: var(--accent-light);
-    font-weight: bold;
+    font-weight: 700;
     letter-spacing: 0.5px;
+    line-height: 1.2;
 }
 
 /* ===== ゲームエリア ===== */
 .game-area {
     flex: 1;
     display: grid;
-    grid-template-columns: 140px 200px 400px;
-    gap: 8px;
-    padding: 8px;
-    background: var(--bg-darker);
+    grid-template-columns: 160px 220px 1fr;
+    gap: 6px;
+    padding: 6px;
+    min-height: 0;
 }
 
 /* ===== 実績パネル ===== */
 .achievements-panel {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
-    padding: 8px;
-    overflow-y: auto;
-    max-height: 100%;
-    flex-shrink: 0;
+    border-radius: 4px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 10;
 }
 
-.panel-header {
-    color: var(--accent-light);
-    font-weight: bold;
-    font-size: 0.75em;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--border-color);
-}
-
+/* achievements-list は廃止。ach-section-header / ach-grid で管理 */
 .achievements-list {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     flex: 1;
+}
+
+.ach-section-header {
+    font-size: 0.62em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: 8px 0 5px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 6px;
+}
+
+.ach-section-header:first-child {
+    padding-top: 0;
+}
+
+.ach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    margin-bottom: 4px;
 }
 
 .achievement-item {
     background: var(--panel-light);
     border: 1px solid var(--border-color);
-    padding: 6px;
-    border-radius: 4px;
-    font-size: 1.6em;
+    border-radius: 6px;
+    padding: 8px 4px;
+    font-size: 1.4em;
     text-align: center;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.15s ease;
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.achievement-item:hover {
-    transform: translateY(-1px);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
-}
+/* ツールチップは JS (.tooltip-box) で管理 */
 
-.achievement-item:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--panel-bg);
-    border: 1px solid var(--accent-color);
-    padding: 6px 10px;
-    border-radius: 3px;
-    white-space: nowrap;
-    font-size: 0.55em;
-    z-index: 1001;
-    color: var(--accent-light);
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    font-weight: 600;
+/* 習得スキルバッジは緑がやや薄め */
+.achievement-item.skill-badge {
+    font-size: 1.25em;
 }
 
 .achievement-item.unlocked {
-    background: linear-gradient(135deg, var(--accent-color) 0%, rgba(74, 157, 111, 0.7) 100%);
-    color: #000;
-    font-weight: bold;
-    border-color: var(--accent-light);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 6px rgba(74, 157, 111, 0.3);
-}
-
-.achievement-item.unlocked:hover {
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(74, 157, 111, 0.4);
+    background: linear-gradient(135deg, var(--button-color) 0%, #1a3d2e 100%);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .achievement-item.locked {
-    opacity: 0.5;
-    color: var(--text-secondary);
+    opacity: 0.3;
+    filter: grayscale(1);
 }
 
 /* ===== 中央クリックエリア ===== */
 .click-arena {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
+    border-radius: 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 16px 10px;
     position: relative;
-    max-width: 200px;
-    margin: 0 auto;
 }
 
 .arena-content {
@@ -238,19 +227,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-}
-
-.token-image {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 2px solid #d4af37;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-    object-fit: cover;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-    pointer-events: none;
+    gap: 16px;
+    width: 100%;
 }
 
 .token-button {
@@ -258,390 +236,148 @@ body {
     border: none;
     padding: 0;
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform 0.08s ease;
+    border-radius: 50%;
+    outline: none;
+    position: relative;
+}
+
+.token-button::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.token-button:hover::before {
+    opacity: 1;
 }
 
 .token-button:hover {
-    transform: scale(1.05);
+    transform: scale(1.06);
 }
 
 .token-button:active {
-    transform: scale(0.95);
+    transform: scale(0.93);
 }
 
-.token-image:hover {
-    transform: scale(1.05);
-}
-
-.click-button {
-    width: 200px;
-    height: 80px;
-    background: linear-gradient(180deg, var(--button-color) 0%, #2a4238 100%);
-    border: 2px solid var(--accent-color);
-    color: var(--text-primary);
-    font-size: 1.4em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    border-radius: 4px;
-    font-family: inherit;
-    position: relative;
-    overflow: hidden;
-}
-
-.click-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
+.token-image {
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
-    background: rgba(108, 184, 150, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+    border: 3px solid var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-glow), 0 4px 16px rgba(0, 0, 0, 0.5);
+    object-fit: cover;
     pointer-events: none;
-}
-
-.click-button:hover {
-    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent-color) 100%);
-    color: #000;
-    box-shadow: 0 4px 16px rgba(74, 157, 111, 0.4);
-    transform: translateY(-2px);
-    border-color: var(--accent-light);
-}
-
-.click-button:active {
-    transform: scale(0.94) translateY(1px);
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(74, 157, 111, 0.2);
-}
-
-.buy-button {
-    background: linear-gradient(180deg, var(--button-color) 0%, #2a4238 100%);
-    border: 1px solid var(--accent-color);
-    color: var(--text-primary);
-    font-size: 0.9em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border-radius: 3px;
-    padding: 6px 12px;
-    min-width: 50px;
-    text-align: center;
-}
-
-.buy-button:hover:not(:disabled) {
-    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent-color) 100%);
-    color: #000;
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(74, 157, 111, 0.3);
-}
-
-.buy-button:active:not(:disabled) {
-    transform: scale(0.95);
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.buy-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: var(--panel-light);
-    color: var(--text-secondary);
-}
-
-.notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(102, 187, 106, 0.9);
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 4px;
-    font-weight: bold;
-    animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards;
-    z-index: 1001;
-    pointer-events: none;
-    font-size: 0.9em;
-}
-
-.notification.purchase {
-    background: rgba(255, 237, 78, 0.9);
-    color: #000;
-}
-
-.notification.error {
-    background: rgba(231, 76, 60, 0.9);
-}
-
-.notification.click {
-    background: rgba(74, 157, 111, 0.9);
-}
-
-.notification.achievement {
-    background: rgba(255, 193, 7, 0.9);
-    color: #000;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(400px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-    }
-}
-
-.locked-preview {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.lock-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.lock-icon {
-    font-size: 1.5em;
-}
-
-.unlock-progress {
-    flex: 1;
-    text-align: center;
-}
-
-.progress-bar {
-    height: 4px;
-    background: var(--accent-color);
-    border-radius: 2px;
-    margin-bottom: 4px;
+    display: block;
 }
 
 .arena-stats {
     display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 10px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
     background: var(--panel-light);
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
 
-.arena-stats .stat {
+.arena-stat-row {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 .arena-stats .label {
-    font-size: 0.75em;
+    font-size: 0.7em;
     color: var(--text-secondary);
     letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .arena-stats .value {
-    font-size: 1.5em;
+    font-size: 1.1em;
     color: var(--accent-light);
-    font-weight: bold;
+    font-weight: 700;
 }
 
-/* ===== チャートパネル ===== */
-.chart-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-#btcChart,
-#stockChart {
-    max-width: 100%;
-    height: auto;
-}
-
-/* ===== アイテムカード ===== */
-.item-card {
-    background: var(--panel-light);
-    border: 1px solid var(--border-color);
-    padding: 8px;
-    margin-bottom: 6px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    align-items: center;
-    transition: all 0.2s;
-}
-
-.item-card:hover {
-    background: var(--panel-bg);
-    border-color: var(--accent-color);
-}
-
-.item-card.unaffordable {
-    opacity: 0.5;
-    border-color: var(--border-color);
-}
-
-.item-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    position: relative;
-}
-
-.item-name {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 0.9em;
-}
-
-.item-description {
-    display: none;
-}
-
-.item-info:hover::after {
-    content: attr(data-description);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--panel-bg);
-    border: 1px solid var(--accent-color);
-    padding: 10px 14px;
-    border-radius: 4px;
-    white-space: normal;
-    font-size: 0.8em;
-    z-index: 1001;
-    color: var(--text-secondary);
-    pointer-events: none;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-    max-width: 220px;
-    word-break: break-word;
-    margin-bottom: 8px;
-    text-align: center;
-    line-height: 1.4;
-}
-
-.item-effect {
+/* ===== フローティング数字 ===== */
+.click-float {
+    position: fixed;
     color: var(--accent-light);
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-.item-action {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 5px;
-}
-
-.price-info {
-    text-align: right;
-    font-size: 0.8em;
-    color: var(--text-secondary);
-}
-
-.buy-button {
-    background: var(--button-color);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-color);
-    padding: 5px 10px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.75em;
-    transition: all 0.1s;
-    letter-spacing: 0.5px;
-    font-family: inherit;
-    position: relative;
-    overflow: hidden;
-}
-
-.buy-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(108, 184, 150, 0.5);
-    transform: translate(-50%, -50%);
+    font-weight: 800;
+    font-size: 1.1em;
     pointer-events: none;
+    z-index: 2000;
+    animation: floatUp 0.9s ease-out forwards;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    user-select: none;
 }
 
-.buy-button:hover:not(:disabled) {
-    background: var(--accent-color);
-    color: #000;
-    box-shadow: 0 0 12px rgba(74, 157, 111, 0.5);
-    transform: translateY(-2px);
+@keyframes floatUp {
+    0%   { transform: translateY(0) scale(1);    opacity: 1; }
+    60%  { transform: translateY(-40px) scale(1.1); opacity: 0.9; }
+    100% { transform: translateY(-70px) scale(0.9); opacity: 0; }
 }
 
-.buy-button:active:not(:disabled) {
-    transform: translateY(0) scale(0.95);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* ===== ポートフォリオセクション ===== */
+/* ===== 右パネル ===== */
 .right-panel {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
-    overflow: hidden;
+    border-radius: 4px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .portfolio-section {
-    background: var(--panel-bg);
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .portfolio-header {
     background: var(--panel-light);
-    padding: 8px 15px;
+    padding: 8px 14px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .portfolio-header h3 {
     color: var(--accent-light);
-    font-size: 0.8em;
-    letter-spacing: 0.5px;
+    font-size: 0.7em;
+    letter-spacing: 1px;
     margin: 0;
     text-transform: uppercase;
+    font-weight: 700;
 }
 
 .shop-tabs-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0;
+    grid-template-columns: repeat(3, 1fr);
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .tab-button {
-    padding: 10px;
+    padding: 9px 4px;
     background: var(--bg-dark);
     border: none;
     border-right: 1px solid var(--border-color);
     color: var(--text-secondary);
-    font-size: 0.85em;
+    font-size: 0.78em;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     font-family: inherit;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     font-weight: 500;
 }
 
@@ -655,27 +391,18 @@ body {
 }
 
 .tab-button.active {
-    background: var(--panel-light);
+    background: var(--panel-bg);
     color: var(--accent-light);
     border-bottom: 2px solid var(--accent-color);
-}
-
-/* ===== ミニチャート ===== */
-.mini-chart {
-    width: 100%;
-    height: 80px;
-    background: var(--panel-light);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 12px;
+    font-weight: 700;
 }
 
 .tab-panel {
-    padding: 10px 12px;
-    background: var(--bg-dark);
-    max-height: 400px;
-    overflow-y: auto;
     flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: var(--bg-dark);
+    min-height: 0;
 }
 
 .tab-content {
@@ -686,82 +413,266 @@ body {
     display: block;
 }
 
-/* ===== スクロールバー ===== */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-dark);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+/* ===== アイテムカード ===== */
+.item-card {
+    background: var(--panel-light);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
+    padding: 9px 10px;
+    margin-bottom: 6px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    transition: border-color 0.15s, background 0.15s;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+.item-card:hover {
+    background: #353535;
+    border-color: var(--accent-color);
+}
+
+.item-card.unaffordable {
+    opacity: 0.45;
+}
+
+.item-card.unaffordable:hover {
+    border-color: var(--border-color);
+    background: var(--panel-light);
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: relative;
+    min-width: 0;
+}
+
+.item-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.88em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-effect {
+    color: var(--accent-light);
+    font-size: 0.78em;
+    font-weight: 500;
+}
+
+/* ツールチップは JS (.tooltip-box) で管理 */
+
+.buy-group {
+    display: flex;
+    gap: 4px;
+    align-items: stretch;
+    flex-shrink: 0;
+}
+
+.buy-button {
+    background: var(--button-color);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-light);
+    font-size: 0.75em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.1s;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 42px;
+    line-height: 1.2;
+}
+
+.btn-price {
+    font-size: 0.78em;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: block;
+}
+
+.buy-button:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.buy-button:hover:not(:disabled) .btn-price {
+    color: #000;
+}
+
+.buy-button:active:not(:disabled) {
+    transform: scale(0.94);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.buy-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* ===== ロックプレビュー ===== */
+.locked-preview {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.lock-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lock-icon {
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.unlock-progress {
+    flex: 1;
+}
+
+.progress-bar-track {
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin-bottom: 3px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: 2px;
+}
+
+.unlock-progress span {
+    font-size: 0.72em;
+    color: var(--text-secondary);
 }
 
 /* ===== 通知 ===== */
 .notifications {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 16px;
+    right: 16px;
     z-index: 1000;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .notification {
     background: var(--panel-light);
     color: var(--text-primary);
-    padding: 12px 16px;
-    margin-bottom: 10px;
+    padding: 9px 14px;
     border: 1px solid var(--accent-color);
-    animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s backwards;
-    font-weight: 500;
-    font-size: 0.9em;
     border-radius: 4px;
+    animation: slideIn 0.25s ease, slideOut 0.3s ease 2.7s forwards;
+    font-weight: 500;
+    font-size: 0.85em;
+    max-width: 260px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.notification.purchase {
+    border-color: #f5c842;
+    color: #f5c842;
+}
+
+.notification.error {
+    border-color: var(--danger-color);
+    color: #ef9a9a;
+}
+
+.notification.achievement {
+    border-color: #ffc107;
+    color: #ffc107;
+    font-weight: 700;
 }
 
 @keyframes slideIn {
-    from {
-        transform: translateX(350px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(280px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
 }
 
 @keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateX(350px);
-        opacity: 0;
-    }
+    from { transform: translateX(0);     opacity: 1; }
+    to   { transform: translateX(280px); opacity: 0; }
 }
 
 /* ===== フッター ===== */
 .trader-footer {
     background: var(--bg-dark);
     border-top: 1px solid var(--border-color);
-    padding: 12px 20px;
+    padding: 8px 18px;
     text-align: center;
     color: var(--text-secondary);
-    font-size: 0.85em;
+    font-size: 0.75em;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
-.trader-footer p {
-    margin: 0;
+/* ===== スクロールバー ===== */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ===== JS ツールチップ ===== */
+.tooltip-box {
+    display: none;
+    position: fixed;
+    background: #181818;
+    border: 1px solid var(--accent-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.82em;
+    font-weight: 500;
+    line-height: 1.65;
+    z-index: 9999;
+    pointer-events: none;
+    max-width: 210px;
+    white-space: pre-line;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8);
+}
+
+/* 施設の個数バッジ */
+.item-count {
+    display: inline-block;
+    background: var(--button-color);
+    color: var(--accent-light);
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--accent-color);
+    margin-left: 4px;
+    vertical-align: middle;
 }
 
 /* ===== リスト ===== */
@@ -769,89 +680,35 @@ body {
 .buildings-list-full,
 .crypto-list-full,
 .stocks-list-full {
-    display: grid;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
 }
+
 
 /* ===== レスポンシブ ===== */
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
     .game-area {
-        grid-template-columns: 140px 1fr 260px;
+        grid-template-columns: 140px 200px 1fr;
     }
-
-    .info-bar {
-        grid-template-columns: repeat(2, 1fr);
+    .token-image {
+        width: 110px;
+        height: 110px;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
     .game-area {
         grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+        overflow-y: auto;
     }
-
     .achievements-panel {
-        order: -1;
-        max-height: 140px;
+        max-height: 120px;
     }
-
-    .chart-panel {
-        order: 1;
+    .achievements-list {
+        grid-template-columns: repeat(4, 1fr);
     }
-
-    .game-title {
-        font-size: 1.4em;
-    }
-
-    .click-button {
-        width: 160px;
-        height: 60px;
-        font-size: 1.1em;
-    }
-
-    .coin-display {
-        width: 140px;
-        height: 140px;
-    }
-
-    .shop-tabs-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 480px) {
-    .trader-header {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .header-right {
-        width: 100%;
-        justify-content: space-between;
-    }
-
     .info-bar {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        font-size: 12px;
-    }
-
-    .game-title {
-        font-size: 1.2em;
-    }
-
-    .click-button {
-        width: 120px;
-        height: 50px;
-        font-size: 0.9em;
-    }
-
-    .coin-display {
-        width: 120px;
-        height: 120px;
-        font-size: 60px;
-    }
-
-    .shop-tabs-container {
-        grid-template-columns: 1fr;
     }
 }
