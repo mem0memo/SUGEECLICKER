@@ -34,7 +34,7 @@ let tick = 0;
 // autoClick: trueの施設はproductionではなくclickValue×countを毎秒加算
 // autoTrade: trueの施設は毎秒自動売買を行う
 const BUILDINGS = [
-    { id: 'vegetable', name: '野菜農園',      desc: '農業で世界変革（言いすぎ）',          icon: '🥬', basePrice: 10,      baseProduction: 0.1,  multiplier: 1.15, unlockCondition: null },
+    { id: 'vegetable', name: '野菜農園',      desc: '農業で世界変革（おいしい）',          icon: '🥬', basePrice: 10,      baseProduction: 0.1,  multiplier: 1.15, unlockCondition: null },
     { id: 'wagyu',     name: '和牛農場',      desc: '肉は権力の象徴',                      icon: '🐄', basePrice: 60,      baseProduction: 0.5,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1 },
     { id: 'sns',       name: 'SNS配信局',     desc: '所持数×クリック/秒 自動稼ぎ',         icon: '📱', basePrice: 300,     baseProduction: 0,    multiplier: 1.15, autoClick: true,       unlockCondition: gs => (gs.buildings['wagyu']?.count ?? 0) >= 1 },
     { id: 'health',    name: 'お笑いプロダクション', desc: '笑いは最強のコンテンツ',        icon: '🎤', basePrice: 2000,    baseProduction: 4,    multiplier: 1.15, unlockCondition: gs => (gs.buildings['sns']?.count ?? 0) >= 1 },
@@ -170,23 +170,23 @@ const ACHIEVEMENTS = [
 
     // ===== 施設系（序盤）=====
     { id: 'veggie_start',   name: '農業への目覚め',      icon: '🥬',
-      comment: '土を触ったことはないけど',          condition: '野菜農園を1個購入',
-      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1,
+      comment: '土を触ったことはないけど',          condition: '野菜農園を1000個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1000,
       bonus: 2 },
 
     { id: 'wagyu_owner',    name: '和牛オーナー',        icon: '🐄',
-      comment: '高級和牛で差をつけろ',              condition: '和牛農場を1個購入',
-      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 1,
+      comment: '高級和牛で差をつけろ',              condition: '和牛農場を500個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 500,
       bonus: 3 },
 
     { id: 'sns_start',      name: '配信デビュー',        icon: '📱',
-      comment: '毎日更新が信者を作る',              condition: 'SNS配信局を1個購入',
-      check: gs => (gs.buildings['sns']?.count ?? 0) >= 1,
+      comment: '毎日更新が信者を作る',              condition: 'SNS配信局を200個購入',
+      check: gs => (gs.buildings['sns']?.count ?? 0) >= 200,
       bonus: 6 },
 
     { id: 'health_start',   name: 'R入り初舞台',         icon: '🎤',
-      comment: '笑いを取れた瞬間、世界が変わった', condition: 'お笑いプロダクションを1個購入',
-      check: gs => (gs.buildings['health']?.count ?? 0) >= 1,
+      comment: '笑いを取れた瞬間、世界が変わった', condition: 'お笑いプロダクションを100個購入',
+      check: gs => (gs.buildings['health']?.count ?? 0) >= 100,
       bonus: 10 },
 
     // ===== 施設系（中盤）=====
