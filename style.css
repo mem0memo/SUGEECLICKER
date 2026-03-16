@@ -397,7 +397,7 @@ body {
 
 .shop-tabs-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }

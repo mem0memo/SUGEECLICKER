@@ -360,7 +360,7 @@ function renderAchievements() {
         item.className = `achievement-item ${unlocked ? 'unlocked' : 'locked'}`;
         item.textContent = unlocked ? ach.icon : '🔒';
         const tooltip = unlocked
-            ? `${ach.name}\n${ach.comment}`
+            ? `${ach.name}\n${ach.comment}\n条件: ${ach.condition}`
             : `???\n条件: ${maskLockedNames(ach.condition)}`;
         item.setAttribute('data-tooltip', tooltip);
         grid.appendChild(item);
