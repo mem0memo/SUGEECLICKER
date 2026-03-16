@@ -164,14 +164,14 @@ body {
 }
 
 .ach-section-header {
-    font-size: 0.62em;
+    font-size: 0.6em;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-secondary);
-    padding: 8px 0 5px;
+    padding: 5px 0 4px;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .ach-section-header:first-child {
@@ -181,16 +181,16 @@ body {
 .ach-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: 3px;
+    margin-bottom: 3px;
 }
 
 .achievement-item {
     background: var(--panel-light);
     border: 1px solid var(--border-color);
-    border-radius: 5px;
-    padding: 5px 2px;
-    font-size: 1.1em;
+    border-radius: 4px;
+    padding: 2px;
+    font-size: 1.6em;
     text-align: center;
     cursor: default;
     transition: all 0.15s ease;
@@ -203,9 +203,9 @@ body {
 
 /* ツールチップは JS (.tooltip-box) で管理 */
 
-/* 習得スキルバッジは緑がやや薄め */
+/* 習得スキルバッジ */
 .achievement-item.skill-badge {
-    font-size: 1.25em;
+    font-size: 1.4em;
 }
 
 .achievement-item.unlocked {

@@ -219,6 +219,8 @@ function renderAchievements() {
     const el = document.getElementById('achievementsList');
     if (!el) return;
     el.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'ach-grid';
     ACHIEVEMENTS.forEach(ach => {
         const unlocked = GameState.unlockedAchievements.includes(ach.id);
         const item = document.createElement('div');
@@ -227,8 +229,9 @@ function renderAchievements() {
         item.setAttribute('data-tooltip',
             unlocked ? `${ach.name}\n${ach.comment}` : `${ach.name}\n条件: ${ach.condition}`
         );
-        el.appendChild(item);
+        grid.appendChild(item);
     });
+    el.appendChild(grid);
 }
 
 function bulkBuildingPrice(b, n) {
