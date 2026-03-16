@@ -295,8 +295,8 @@ const ACHIEVEMENTS = [
       bonus: 30 },
 
     { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀',
-      comment: '買えたのか…なぜ？',               condition: 'サナオトークンを1個保有',
-      check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 1,
+      comment: '買えたのか…なぜ？',               condition: 'サナオトークンを50個保有',
+      check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 50,
       bonus: 10000 },
 ];
 
