@@ -14,13 +14,15 @@ const GameState = {
     achievements: 0,
     clickValueHistory: [1],
     productionHistory: [0],
-    unlockedAchievements: []
+    unlockedAchievements: [],
+    purchasedUpgrades: []
 };
 
 let upgradesChart = null;
 let buildingsChart = null;
 let cryptoChart = null;
 let stocksChart = null;
+let tick = 0;
 
 // 建物定義
 const BUILDINGS = [
@@ -81,6 +83,7 @@ function loadData() {
             Object.assign(GameState, parsed);
             // 後方互換性
             if (!GameState.unlockedAchievements) GameState.unlockedAchievements = [];
+            if (!GameState.purchasedUpgrades) GameState.purchasedUpgrades = [];
             if (!GameState.clickValueHistory) GameState.clickValueHistory = [1];
             if (!GameState.productionHistory) GameState.productionHistory = [0];
             if (!GameState.virtualAPriceHistory) GameState.virtualAPriceHistory = [40000];
@@ -132,7 +135,6 @@ function checkAchievements() {
         }
     });
 }
-if (!GameState.stocks[s.id]) GameState.stocks[s.id] = { owned: 0, price: s.basePrice, history: [s.basePrice] };
 
 function initCharts() {
     // Chart.js removed for testing
@@ -172,6 +174,9 @@ function renderUpgrades() {
     if (!el) return;
     el.innerHTML = '';
     UPGRADES.forEach(u => {
+        // 購入済みは表示しない
+        if (GameState.purchasedUpgrades.includes(u.name)) return;
+
         const unlocked = GameState.totalTokensEarned >= u.minEarned;
         const visible = GameState.totalTokensEarned >= u.minEarned * 0.5; // 50%でプレビュー表示
 
@@ -212,7 +217,7 @@ function renderBuildings() {
     BUILDINGS.forEach(b => {
         const count = GameState.buildings[b.id].count;
         const nextPrice = b.basePrice * Math.pow(b.multiplier, count);
-        const prod = b.baseProduction * Math.pow(b.multiplier, count);
+        const prod = count > 0 ? b.baseProduction * count * Math.pow(b.multiplier, count - 1) : 0;
         const can = GameState.tokens >= nextPrice;
         const card = document.createElement('div');
         card.className = `item-card ${!can ? 'unaffordable' : ''}`;
@@ -281,7 +286,10 @@ function setupEvents() {
 function gameLoop() {
     setInterval(() => {
         let prod = 0;
-        BUILDINGS.forEach(b => prod += b.baseProduction * Math.pow(b.multiplier, GameState.buildings[b.id].count));
+        BUILDINGS.forEach(b => {
+            const count = GameState.buildings[b.id].count;
+            if (count > 0) prod += b.baseProduction * count * Math.pow(b.multiplier, count - 1);
+        });
         // 仮想通貨収入を追加
         prod += GameState.virtualA * 0.5;
         GameState.perSecond = prod;
@@ -336,9 +344,11 @@ function click() {
 }
 
 function buyUpgrade(u) {
+    if (GameState.purchasedUpgrades.includes(u.name)) return;
     if (GameState.tokens >= u.cost) {
         GameState.tokens -= u.cost;
         GameState.clickValue += u.effect;
+        GameState.purchasedUpgrades.push(u.name);
         GameState.clickValueHistory.push(GameState.clickValue);
         if (GameState.clickValueHistory.length > 30) GameState.clickValueHistory.shift();
         GameState.achievements++;
@@ -346,10 +356,10 @@ function buyUpgrade(u) {
         GameState.entrepreneurLevel = Math.floor(Math.sqrt(GameState.purchaseCount)) + 1;
         updateCharts();
         render();
-        showNotification(`Upgrade purchased: ${u.name}!`, 'purchase');
+        showNotification(`スキル習得: ${u.name}!`, 'purchase');
         checkAchievements();
     } else {
-        showNotification(`Not enough tokens: need ${u.cost - GameState.tokens} more`, 'error');
+        showNotification(`トークンが足りません: ${fmt(u.cost - GameState.tokens)} 必要`, 'error');
     }
 }
 
