@@ -29,8 +29,8 @@ const GameState = {
 
 let tick = 0;
 
-// ===== 施設定義（9種）=====
-// 流れ: 農業 → SNS → 健康 → 宇宙 → ブログ → メディア → 夜の店 → 取引所
+// ===== 施設定義（10種）=====
+// 流れ: 農業 → SNS → 健康 → 宇宙 → ブログ → メルマガ → メディア → 夜の店 → 取引所
 // autoClick: trueの施設はproductionではなくclickValue×countを毎秒加算
 // autoTrade: trueの施設は毎秒自動売買を行う
 const BUILDINGS = [
@@ -40,6 +40,7 @@ const BUILDINGS = [
     { id: 'health',    name: 'お笑いプロダクション', desc: 'R入りグランプリを毎年輩出する笑いの工場。笑いは最強のコンテンツだ', icon: '🎤', basePrice: 2000,    baseProduction: 4,    multiplier: 1.15 },
     { id: 'rocket',    name: 'ロケット工場',  desc: '宇宙から地球を見下ろす男の夢。規制なんか関係ない',   icon: '🚀', basePrice: 15000,   baseProduction: 12,   multiplier: 1.15 },
     { id: 'blog',      name: 'ブログポータル', desc: '某SNS以前から俺のブログは人気だった。記事が金になる', icon: '📝', basePrice: 80000,   baseProduction: 35,   multiplier: 1.15 },
+    { id: 'mailmag',   name: '有料メルマガ',  desc: '月額課金で信者を囲い込め。コンテンツは俺の人生そのものだ', icon: '💌', basePrice: 200000,  baseProduction: 65,   multiplier: 1.15 },
     { id: 'media',     name: 'メディア帝国',  desc: '情報こそ21世紀の石油だ。全チャンネル買収を目指せ',  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15 },
     { id: 'salon',     name: '夜の社交場',    desc: '酒と人脈と謎の出会い。一杯飲んでちょめちょめ',       icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15 },
     { id: 'newhalf',   name: 'ニューハーフ', desc: '夜の社交場で出会った敏腕トレーダー。株式市場を誰より読む。保有数=毎秒の株式自動売買数', icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoTradeStocks: true },
@@ -55,7 +56,7 @@ const CRYPTOS = [
         name: '普通のトークン',
         desc: '可もなく不可もない安定資産\n保有数 × 2/秒を生産',
         icon: '🪙',
-        basePrice: 8000,
+        basePrice: 3000,
         production: 2,
         trendStrength: 3000,
         noise: 2000,
@@ -67,10 +68,10 @@ const CRYPTOS = [
     {
         id: 'maamaa',
         name: 'すごくないトークン',
-        desc: 'まあまあなデジタル資産\n保有数 × 0.5/秒を生産',
+        desc: 'まあまあなデジタル資産\n保有数 × 0.3/秒を生産',
         icon: '😐',
-        basePrice: 1500,
-        production: 0.5,
+        basePrice: 500,
+        production: 0.3,
         trendStrength: 2000,
         noise: 1500,
         minPrice: 150,
@@ -95,10 +96,10 @@ const CRYPTOS = [
     {
         id: 'sugee',
         name: 'すげぇトークン',
-        desc: '時間を価値に変える謎の通貨\n保有数 × 5/秒を生産',
+        desc: '時間を価値に変える謎の通貨\n保有数 × 20/秒を生産',
         icon: '⏰',
         basePrice: 400000,
-        production: 5,
+        production: 20,
         trendStrength: 80000,
         noise: 60000,
         minPrice: 40000,
@@ -236,7 +237,7 @@ const ACHIEVEMENTS = [
     { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤',
       comment: '一芸で笑いを取ったら起業家より稼げた', condition: 'お笑いプロダクションを10個購入',
       check: gs => (gs.buildings['health']?.count ?? 0) >= 10,
-      bonus: 250 },
+      bonus: 400 },
 
     // ===== 施設系（後半）=====
     { id: 'media_empire',   name: 'メディア完全制覇',    icon: '📺',
@@ -912,7 +913,7 @@ function gameLoop() {
         // 通常施設からの生産（autoClick/autoTrade施設を除く）
         let prod = 0;
         BUILDINGS.forEach(b => {
-            if (b.autoClick || b.autoTrade) return;
+            if (b.autoClick || b.autoTrade || b.autoTradeStocks) return;
             const count = GameState.buildings[b.id].count;
             if (count > 0) prod += b.baseProduction * count * Math.pow(b.multiplier, count - 1);
         });
