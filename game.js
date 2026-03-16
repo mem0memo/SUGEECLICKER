@@ -16,131 +16,314 @@ const GameState = {
     clickValue: 1,
     perSecond: 0,
     purchaseCount: 0,
-    buildings: {},
-    virtualA: 0,
-    virtualAPrice: 40000,
-    virtualAPriceHistory: [40000],
-    stocks: {},
     entrepreneurLevel: 1,
+    buildings: {},
+    cryptos: {},
+    stocks: {},
+    totalStockTraded: 0,
     productionHistory: [0],
     unlockedAchievements: [],
-    // 相場状態
-    cryptoTrend: 0,         // 正=ブル、負=ベア、累積バイアス
-    cryptoTrendDuration: 0, // 現相場の残り秒数
-    stockTrends: {},        // { [id]: { trend, duration } }
+    cryptoTrends: {},  // { [id]: { trend, duration } }
+    stockTrends: {},   // { [id]: { trend, duration } }
 };
 
-let upgradesChart = null;
-let buildingsChart = null;
-let cryptoChart = null;
-let stocksChart = null;
 let tick = 0;
 
-// 建物定義
+// ===== 施設定義（9種）=====
+// 流れ: 農業 → SNS → 健康 → 宇宙 → ブログ → メディア → 夜の店 → 取引所
+// autoClick: trueの施設はproductionではなくclickValue×countを毎秒加算
+// autoTrade: trueの施設は毎秒自動売買を行う
 const BUILDINGS = [
-    { id: 'vegetable', name: '野菜農園',   desc: '農業×テクノロジーで世界を変える（言いすぎ）',        icon: '🥬', basePrice: 10,     baseProduction: 0.1, multiplier: 1.15 },
-    { id: 'sns',       name: 'SNS配信局',  desc: '毎日更新が信者を生む。フォロワー数が影響力の証明',   icon: '📱', basePrice: 100,    baseProduction: 1,   multiplier: 1.15 },
-    { id: 'rocket',    name: 'ロケット工場', desc: '宇宙から地球を見下ろす男の夢。規制なんか関係ない', icon: '🚀', basePrice: 1000,   baseProduction: 5,   multiplier: 1.15 },
-    { id: 'media',     name: 'メディア帝国', desc: '情報こそ21世紀の石油だ。全チャンネル買収を目指せ', icon: '📺', basePrice: 10000,  baseProduction: 15,  multiplier: 1.15 },
-    { id: 'exchange',  name: '取引所',     desc: '規制が来る前に稼ぎきれ。銀行なんていらない',        icon: '💰', basePrice: 100000, baseProduction: 50,  multiplier: 1.15 },
+    { id: 'vegetable', name: '野菜農園',      desc: '農業×テクノロジーで世界を変える（言いすぎ）',          icon: '🥬', basePrice: 10,      baseProduction: 0.1,  multiplier: 1.15 },
+    { id: 'wagyu',     name: '和牛農場',      desc: '最高級の和牛を育てる。肉は権力の象徴だ',              icon: '🐄', basePrice: 60,      baseProduction: 0.5,  multiplier: 1.15 },
+    { id: 'sns',       name: 'SNS配信局',     desc: '毎日更新が信者を生む。所持数×クリック力/秒で自動稼ぎ', icon: '📱', basePrice: 300,     baseProduction: 0,    multiplier: 1.15, autoClick: true },
+    { id: 'health',    name: 'お笑いプロダクション', desc: 'R入りグランプリを毎年輩出する笑いの工場。笑いは最強のコンテンツだ', icon: '🎤', basePrice: 2000,    baseProduction: 4,    multiplier: 1.15 },
+    { id: 'rocket',    name: 'ロケット工場',  desc: '宇宙から地球を見下ろす男の夢。規制なんか関係ない',   icon: '🚀', basePrice: 15000,   baseProduction: 12,   multiplier: 1.15 },
+    { id: 'blog',      name: 'ブログポータル', desc: '某SNS以前から俺のブログは人気だった。記事が金になる', icon: '📝', basePrice: 80000,   baseProduction: 35,   multiplier: 1.15 },
+    { id: 'media',     name: 'メディア帝国',  desc: '情報こそ21世紀の石油だ。全チャンネル買収を目指せ',  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15 },
+    { id: 'salon',     name: '夜の社交場',    desc: '酒と人脈と謎の出会い。一杯飲んでちょめちょめ',       icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15 },
+    { id: 'exchange',  name: '取引所',        desc: '価格レンジを読んで自動売買。所持数=同時取引数',       icon: '💰', basePrice: 8000000, baseProduction: 0,    multiplier: 1.15, autoTrade: true },
 ];
 
-// 株式定義
+// ===== 暗号資産定義（5種）=====
+// 解放順: 普通のトークン → すごくないトークン → 感想トークン → すげぇトークン → サナオトークン
+// bearBias: 0.5=中立, 0.7=ベア寄り, 0.8=ほぼ常にベア
+const CRYPTOS = [
+    {
+        id: 'futsuu',
+        name: '普通のトークン',
+        desc: '可もなく不可もない安定資産\n保有数 × 2/秒を生産',
+        icon: '🪙',
+        basePrice: 8000,
+        production: 2,
+        trendStrength: 3000,
+        noise: 2000,
+        minPrice: 800,
+        bearBias: 0.48,
+        unlockCondition: null,
+        unlockDesc: null,
+    },
+    {
+        id: 'maamaa',
+        name: 'すごくないトークン',
+        desc: 'まあまあなデジタル資産\n保有数 × 0.5/秒を生産',
+        icon: '😐',
+        basePrice: 1500,
+        production: 0.5,
+        trendStrength: 2000,
+        noise: 1500,
+        minPrice: 150,
+        bearBias: 0.48,
+        unlockCondition: gs => (gs.buildings['wagyu']?.count ?? 0) >= 5,
+        unlockDesc: '和牛農場を5個購入で解放',
+    },
+    {
+        id: 'kansou',
+        name: '感想トークン',
+        desc: '感想を資産化した革命的通貨\n保有数 × 10/秒を生産',
+        icon: '💬',
+        basePrice: 80000,
+        production: 10,
+        trendStrength: 20000,
+        noise: 15000,
+        minPrice: 8000,
+        bearBias: 0.48,
+        unlockCondition: gs => (gs.buildings['health']?.count ?? 0) >= 3,
+        unlockDesc: 'お笑いプロダクションを3個購入で解放',
+    },
+    {
+        id: 'sugee',
+        name: 'すげぇトークン',
+        desc: '時間を価値に変える謎の通貨\n保有数 × 5/秒を生産',
+        icon: '⏰',
+        basePrice: 400000,
+        production: 5,
+        trendStrength: 80000,
+        noise: 60000,
+        minPrice: 40000,
+        bearBias: 0.48,
+        unlockCondition: gs => (gs.buildings['blog']?.count ?? 0) >= 2,
+        unlockDesc: 'ブログポータルを2個購入で解放',
+    },
+    {
+        id: 'sanao',
+        name: 'サナオトークン',
+        desc: 'なぜか稼げない謎の通貨\n保有数 × 5/秒を生産（一応）',
+        icon: '🌀',
+        basePrice: 2000000,
+        production: 5,
+        trendStrength: 120000,
+        noise: 90000,
+        minPrice: 100000,
+        bearBias: 0.8,  // 80%の確率でベア相場
+        unlockCondition: gs => (gs.buildings['salon']?.count ?? 0) >= 1,
+        unlockDesc: '夜の社交場を1個購入で解放',
+    },
+];
+
+// ===== 株式定義（4種、解放条件付き）=====
 const STOCKS = [
-    { id: 'video', name: '動画配信株',     desc: 'ネット動画を牛耳る企業への投資',   basePrice: 100 },
-    { id: 'space', name: '宇宙ビジネス株', desc: '民間ロケット企業。夢は大きく',     basePrice: 300 },
+    {
+        id: 'video',
+        name: '動画配信株',
+        desc: 'ネット動画を牛耳る企業への投資',
+        icon: '📹',
+        basePrice: 200,
+        dividendRate: 0.005,
+        trendStrength: 80,
+        noise: 60,
+        unlockCondition: null,
+        unlockDesc: null,
+    },
+    {
+        id: 'space',
+        name: '宇宙ビジネス株',
+        desc: '民間ロケット企業。夢は大きく',
+        icon: '🛸',
+        basePrice: 2000,
+        dividendRate: 0.005,
+        trendStrength: 500,
+        noise: 400,
+        unlockCondition: gs => (gs.buildings['rocket']?.count ?? 0) >= 2,
+        unlockDesc: 'ロケット工場を2個購入で解放',
+    },
+    {
+        id: 'media',
+        name: 'メディア株',
+        desc: '情報を制する者が市場を制す',
+        icon: '📡',
+        basePrice: 15000,
+        dividendRate: 0.004,
+        trendStrength: 3000,
+        noise: 2500,
+        unlockCondition: gs => (gs.buildings['media']?.count ?? 0) >= 1,
+        unlockDesc: 'メディア帝国を1個購入で解放',
+    },
+    {
+        id: 'finance',
+        name: '金融プラットフォーム株',
+        desc: '規制前に市場を取れ。高リスク高リターン',
+        icon: '🏦',
+        basePrice: 100000,
+        dividendRate: 0.003,
+        trendStrength: 20000,
+        noise: 18000,
+        unlockCondition: gs => (gs.buildings['exchange']?.count ?? 0) >= 1,
+        unlockDesc: '取引所を1個購入で解放',
+    },
 ];
 
-// 実績定義（旧スキル含む。解放で clickValue 上昇）
+// ===== 実績定義（25種・施設→取引→実績の流れ）=====
 const ACHIEVEMENTS = [
-    // ゲーム開始
-    { id: 'first_click',   name: '最初のクリック',      icon: '🖱️',
-      comment: '伝説の始まり',             condition: '1回クリック',
-      check: gs => gs.totalTokensEarned > 0,
-      bonus: 0 },
+    // ===== ゲーム開始 =====
+    { id: 'first_click',    name: '最初のクリック',      icon: '🖱️',
+      comment: '伝説の始まり',                      condition: '1回クリック',
+      check: gs => gs.totalTokensEarned > 0,        bonus: 0 },
 
-    // 施設系
-    { id: 'veggie_eater',  name: '野菜を食べる',         icon: '🥕',
-      comment: '健康は最大の自己投資',     condition: '野菜農園を1個購入',
+    // ===== 施設系（序盤）=====
+    { id: 'veggie_start',   name: '農業への目覚め',      icon: '🥬',
+      comment: '土を触ったことはないけど',          condition: '野菜農園を1個購入',
       check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1,
-      bonus: 1 },
-
-    { id: 'streamer',      name: '配信力の向上',         icon: '📹',
-      comment: 'フォロワーが影響力になる', condition: 'SNS配信局を3個購入',
-      check: gs => (gs.buildings['sns']?.count ?? 0) >= 3,
       bonus: 2 },
 
-    { id: 'flamewar',      name: '炎上を制する',         icon: '🔥',
-      comment: '炎上は無料の広告。論破！', condition: '施設を合計5個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 5,
-      bonus: 5 },
+    { id: 'wagyu_owner',    name: '和牛オーナー',        icon: '🐄',
+      comment: '高級和牛で差をつけろ',              condition: '和牛農場を1個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 1,
+      bonus: 3 },
 
-    { id: 'network',       name: '人脈の多様化',         icon: '👯',
-      comment: '常識外の人脈が革命を起こす', condition: '施設を合計10個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 10,
-      bonus: 15 },
+    { id: 'sns_start',      name: '配信デビュー',        icon: '📱',
+      comment: '毎日更新が信者を作る',              condition: 'SNS配信局を1個購入',
+      check: gs => (gs.buildings['sns']?.count ?? 0) >= 1,
+      bonus: 6 },
 
-    { id: 'tv_contract',   name: 'テレビ局との契約',     icon: '📡',
-      comment: 'でもネットの方が自由だ',   condition: 'メディア帝国を1個購入',
-      check: gs => (gs.buildings['media']?.count ?? 0) >= 1,
-      bonus: 60 },
-
-    { id: 'rocket_plan',   name: 'ロケット打ち上げ計画', icon: '🌌',
-      comment: '笑った奴を宇宙から見下ろす', condition: 'ロケット工場を5個購入',
-      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 5,
-      bonus: 100 },
-
-    { id: 'veggie_love',   name: '究極の野菜愛',         icon: '🌱',
-      comment: '野菜は裏切らない',         condition: '野菜農園を20個購入',
-      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 20,
-      bonus: 300 },
-
-    // トークン系
-    { id: 'fan_event',     name: '信者獲得イベント',     icon: '⭐',
-      comment: '有料サロンで月額課金が基本', condition: '累計1万トークン',
-      check: gs => gs.totalTokensEarned >= 10000,
-      bonus: 40 },
-
-    { id: 'philosophy',    name: '経営哲学の完成',       icon: '🧠',
-      comment: '時間こそ唯一の有限資産',   condition: '累計10万トークン',
-      check: gs => gs.totalTokensEarned >= 100000,
-      bonus: 150 },
-
-    { id: 'millionaire',   name: 'ミリオネア',           icon: '💰',
-      comment: '金は時間で稼ぐ。論破！',   condition: '累計100万トークン',
-      check: gs => gs.totalTokensEarned >= 1000000,
-      bonus: 0 },
-
-    // 仮想通貨系
-    { id: 'crypto_know',   name: '仮想通貨の知識',       icon: '💎',
-      comment: '中央銀行に依存するな',     condition: 'すげぇトークンを5個購入',
-      check: gs => gs.virtualA >= 5,
+    { id: 'health_start',   name: 'R入り初舞台',         icon: '🎤',
+      comment: '笑いを取れた瞬間、世界が変わった', condition: 'お笑いプロダクションを1個購入',
+      check: gs => (gs.buildings['health']?.count ?? 0) >= 1,
       bonus: 10 },
 
-    { id: 'crypto_trader', name: '仮想通貨の覇者',       icon: '📈',
-      comment: 'ブロックチェーンは国家を超える', condition: 'すげぇトークンを50個購入',
-      check: gs => gs.virtualA >= 50,
-      bonus: 0 },
-
-    // 株式系
-    { id: 'bbs_peace',     name: '掲示板の人との和解',   icon: '🤝',
-      comment: 'ネットの敵も酒を飲めば友達', condition: '株を5株以上保有',
-      check: gs => Object.values(gs.stocks).reduce((a, s) => a + s.owned, 0) >= 5,
+    // ===== 施設系（中盤）=====
+    { id: 'building_15',    name: '施設コレクター',      icon: '🏗️',
+      comment: 'まだまだ規模が足りない',            condition: '施設を合計15個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 15,
       bonus: 25 },
 
-    { id: 'world_power',   name: '世界規模の影響力',     icon: '🌍',
-      comment: '全メディア買収（予定）',   condition: '株を50株以上保有',
-      check: gs => Object.values(gs.stocks).reduce((a, s) => a + s.owned, 0) >= 50,
+    { id: 'wagyu_ranch',    name: '和牛農場の拡大',      icon: '🥩',
+      comment: 'サシが入るまで育てろ',              condition: '和牛農場を15個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 15,
+      bonus: 60 },
+
+    { id: 'blog_empire',    name: 'ブログの帝王',        icon: '📝',
+      comment: '某社に先を越されたが負けてない',    condition: 'ブログポータルを5個購入',
+      check: gs => (gs.buildings['blog']?.count ?? 0) >= 5,
       bonus: 200 },
+
+    { id: 'rocket_mass',    name: 'ロケット量産体制',    icon: '🚀',
+      comment: '空を見上げるな、宇宙を見ろ',       condition: 'ロケット工場を8個購入',
+      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 8,
+      bonus: 300 },
+
+    { id: 'salon_legend',   name: '夜の伝説',            icon: '🌙',
+      comment: '一杯飲んでちょめちょめ（詳細不明）', condition: '夜の社交場を3個購入',
+      check: gs => (gs.buildings['salon']?.count ?? 0) >= 3,
+      bonus: 600 },
+
+    { id: 'night_diversity', name: '夜の多様な出会い',   icon: '💃',
+      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: '夜の社交場を8個購入',
+      check: gs => (gs.buildings['salon']?.count ?? 0) >= 8,
+      bonus: 1200 },
+
+    { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤',
+      comment: '一芸で笑いを取ったら起業家より稼げた', condition: 'お笑いプロダクションを10個購入',
+      check: gs => (gs.buildings['health']?.count ?? 0) >= 10,
+      bonus: 250 },
+
+    // ===== 施設系（後半）=====
+    { id: 'media_empire',   name: 'メディア完全制覇',    icon: '📺',
+      comment: '全チャンネルで俺の顔を流せ',       condition: 'メディア帝国を5個購入',
+      check: gs => (gs.buildings['media']?.count ?? 0) >= 5,
+      bonus: 800 },
+
+    { id: 'exchange_open',  name: '取引所開設',          icon: '💹',
+      comment: '銀行は時代遅れ。論破',              condition: '取引所を1個購入',
+      check: gs => (gs.buildings['exchange']?.count ?? 0) >= 1,
+      bonus: 1000 },
+
+    { id: 'veggie_farm',    name: '野菜王国の礎',        icon: '🌾',
+      comment: 'ニンジンで世界征服',               condition: '野菜農園を30個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 30,
+      bonus: 150 },
+
+    { id: 'building_100',   name: '百施設帝国',          icon: '🏙️',
+      comment: 'もはや一個人の規模じゃない',       condition: '施設を合計100個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 100,
+      bonus: 3000 },
+
+    // ===== トークン累計系 =====
+    { id: 'token_100k',     name: '最初の壁',            icon: '💴',
+      comment: '10万なんてケタが違う（そうでもない）', condition: '累計10万トークン',
+      check: gs => gs.totalTokensEarned >= 100000,
+      bonus: 30 },
+
+    { id: 'millionaire',    name: 'ミリオネア',          icon: '💰',
+      comment: '金は時間で稼ぐ。論破！',           condition: '累計100万トークン',
+      check: gs => gs.totalTokensEarned >= 1000000,
+      bonus: 150 },
+
+    { id: 'billionaire',    name: '億り人',              icon: '💎',
+      comment: 'ようやくスタートライン',            condition: '累計1億トークン',
+      check: gs => gs.totalTokensEarned >= 100000000,
+      bonus: 1500 },
+
+    { id: 'ex_con_ceo',     name: '前科持ち社長',        icon: '⛓️',
+      comment: '塀の中で多くを学んだ（自称）',     condition: '累計10億トークン',
+      check: gs => gs.totalTokensEarned >= 1000000000,
+      bonus: 6000 },
+
+    // ===== 株取引系 =====
+    { id: 'stock_debut',    name: '株式デビュー',        icon: '📊',
+      comment: 'チャートの読み方を学べ',           condition: '株取引累計5,000',
+      check: gs => (gs.totalStockTraded ?? 0) >= 5000,
+      bonus: 20 },
+
+    { id: 'stock_trader',   name: 'トレーダー覚醒',      icon: '📈',
+      comment: '感情で売買するな。でも俺はする',   condition: '株取引累計10万',
+      check: gs => (gs.totalStockTraded ?? 0) >= 100000,
+      bonus: 200 },
+
+    { id: 'wall_st',        name: 'ウォール街の申し子',  icon: '🗽',
+      comment: '規制なんて恐れない',               condition: '株取引累計100万',
+      check: gs => (gs.totalStockTraded ?? 0) >= 1000000,
+      bonus: 1000 },
+
+    { id: 'major_holder',   name: '大株主',              icon: '🤵',
+      comment: '議決権で世界を動かす',             condition: '保有株合計50株以上',
+      check: gs => Object.values(gs.stocks).reduce((a, s) => a + s.owned, 0) >= 50,
+      bonus: 500 },
+
+    // ===== 暗号資産系 =====
+    { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐',
+      comment: 'すごくはないが、ないよりマシ',     condition: 'すごくないトークンを5個保有',
+      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 5,
+      bonus: 30 },
+
+    { id: 'kansou_3',       name: '感想家の財産',        icon: '💬',
+      comment: '感想で食っていける時代が来た',     condition: '感想トークンを3個保有',
+      check: gs => (gs.cryptos['kansou']?.owned ?? 0) >= 3,
+      bonus: 500 },
+
+    { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀',
+      comment: '買えたのか…なぜ？',               condition: 'サナオトークンを1個保有',
+      check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 1,
+      bonus: 10000 },
 ];
 
-// 初期化
+// ===== 初期化 =====
 function init() {
     loadData();
     initBuildings();
+    initCryptos();
     initStocks();
     recalcClickValue();
-    initCharts();
     render();
     setupEvents();
     setupTooltip();
@@ -150,26 +333,48 @@ function init() {
 function loadData() {
     try {
         const saved = localStorage.getItem('game');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            Object.assign(GameState, parsed);
-            if (!GameState.unlockedAchievements) GameState.unlockedAchievements = [];
-            if (!GameState.productionHistory)    GameState.productionHistory = [0];
-            if (!GameState.virtualAPriceHistory) GameState.virtualAPriceHistory = [40000];
-            BUILDINGS.forEach(b => {
-                if (!GameState.buildings[b.id]) GameState.buildings[b.id] = { count: 0 };
-            });
-            STOCKS.forEach(s => {
-                if (!GameState.stocks[s.id]) GameState.stocks[s.id] = { owned: 0, price: s.basePrice, history: [s.basePrice] };
-            });
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+
+        // 旧データ移行: virtualA → cryptos.sugee
+        if (parsed.virtualA !== undefined && (!parsed.cryptos || !parsed.cryptos.sugee)) {
+            parsed.cryptos = parsed.cryptos || {};
+            parsed.cryptos.sugee = {
+                owned: parsed.virtualA || 0,
+                price: parsed.virtualAPrice || 40000,
+                history: parsed.virtualAPriceHistory || [40000],
+            };
         }
+        // 旧データ移行: cryptoTrend → cryptoTrends.sugee
+        if (parsed.cryptoTrend !== undefined && !parsed.cryptoTrends) {
+            parsed.cryptoTrends = {
+                sugee: { trend: parsed.cryptoTrend || 0, duration: parsed.cryptoTrendDuration || 0 },
+            };
+        }
+
+        Object.assign(GameState, parsed);
+        if (!GameState.unlockedAchievements) GameState.unlockedAchievements = [];
+        if (!GameState.productionHistory)    GameState.productionHistory = [0];
+        if (!GameState.cryptoTrends)         GameState.cryptoTrends = {};
+        if (!GameState.cryptos)              GameState.cryptos = {};
+        if (!GameState.stocks)               GameState.stocks = {};
+        if (!GameState.totalStockTraded)     GameState.totalStockTraded = 0;
+
+        BUILDINGS.forEach(b => {
+            if (!GameState.buildings[b.id]) GameState.buildings[b.id] = { count: 0 };
+        });
+        CRYPTOS.forEach(c => {
+            if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice] };
+        });
+        STOCKS.forEach(s => {
+            if (!GameState.stocks[s.id]) GameState.stocks[s.id] = { owned: 0, price: s.basePrice, history: [s.basePrice] };
+        });
     } catch (e) {
         console.error('Load data error:', e);
         localStorage.removeItem('game');
     }
 }
 
-// ロード後に解放済み実績からクリック値を再計算
 function recalcClickValue() {
     GameState.clickValue = 1;
     ACHIEVEMENTS.forEach(ach => {
@@ -179,6 +384,25 @@ function recalcClickValue() {
     });
 }
 
+function initBuildings() {
+    BUILDINGS.forEach(b => {
+        if (!GameState.buildings[b.id]) GameState.buildings[b.id] = { count: 0 };
+    });
+}
+
+function initCryptos() {
+    CRYPTOS.forEach(c => {
+        if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice] };
+    });
+}
+
+function initStocks() {
+    STOCKS.forEach(s => {
+        if (!GameState.stocks[s.id]) GameState.stocks[s.id] = { owned: 0, price: s.basePrice, history: [s.basePrice] };
+    });
+}
+
+// ===== 通知 =====
 function showNotification(message, type = 'info') {
     const notif = document.createElement('div');
     notif.className = `notification ${type}`;
@@ -192,6 +416,7 @@ function updateGameDate() {
     if (el) el.textContent = new Date().toLocaleDateString('ja-JP');
 }
 
+// ===== 実績チェック =====
 function checkAchievements() {
     ACHIEVEMENTS.forEach(ach => {
         if (GameState.unlockedAchievements.includes(ach.id)) return;
@@ -204,9 +429,7 @@ function checkAchievements() {
     });
 }
 
-function initCharts() {
-    // Chart.js は任意実装 - 現在は無効
-}
+function initCharts() {}
 
 function render() {
     renderAchievements();
@@ -215,6 +438,18 @@ function render() {
     renderStocks();
 }
 
+// 未解放の暗号資産名を「???」に置き換える
+function maskLockedCryptoNames(text) {
+    CRYPTOS.forEach(c => {
+        if (c.unlockCondition && !c.unlockCondition(GameState)) {
+            // 解放されていない場合、名前を伏せる
+            text = text.replaceAll(c.name, '???');
+        }
+    });
+    return text;
+}
+
+// ===== 実績描画 =====
 function renderAchievements() {
     const el = document.getElementById('achievementsList');
     if (!el) return;
@@ -226,14 +461,16 @@ function renderAchievements() {
         const item = document.createElement('div');
         item.className = `achievement-item ${unlocked ? 'unlocked' : 'locked'}`;
         item.textContent = unlocked ? ach.icon : '🔒';
-        item.setAttribute('data-tooltip',
-            unlocked ? `${ach.name}\n${ach.comment}` : `${ach.name}\n条件: ${ach.condition}`
-        );
+        const tooltip = unlocked
+            ? `${ach.name}\n${ach.comment}`
+            : `${ach.name}\n条件: ${maskLockedCryptoNames(ach.condition)}`;
+        item.setAttribute('data-tooltip', tooltip);
         grid.appendChild(item);
     });
     el.appendChild(grid);
 }
 
+// ===== 施設描画 =====
 function bulkBuildingPrice(b, n) {
     const count = GameState.buildings[b.id].count;
     const r = b.multiplier;
@@ -246,17 +483,29 @@ function renderBuildings() {
     el.innerHTML = '';
     BUILDINGS.forEach(b => {
         const count = GameState.buildings[b.id].count;
-        const prod  = count > 0 ? b.baseProduction * count * Math.pow(b.multiplier, count - 1) : 0;
         const p1    = bulkBuildingPrice(b, 1);
         const p10   = bulkBuildingPrice(b, 10);
         const p100  = bulkBuildingPrice(b, 100);
-        const card  = document.createElement('div');
+
+        // 効果表示: autoClickはclickValue×count、autoTradeは自動売買、それ以外は/s
+        let effectText;
+        if (b.autoClick) {
+            const autoVal = count * GameState.clickValue;
+            effectText = count > 0 ? `🖱️ ${fmt(autoVal)}/s 自動クリック` : '🖱️ 自動クリック';
+        } else if (b.autoTrade) {
+            effectText = count > 0 ? `🤖 ${count}取引/s 自動売買` : '🤖 自動売買';
+        } else {
+            const prod = count > 0 ? b.baseProduction * count * Math.pow(b.multiplier, count - 1) : 0;
+            effectText = `+${fmt(prod)}/s`;
+        }
+
+        const card = document.createElement('div');
         card.className = `item-card ${GameState.tokens < p1 ? 'unaffordable' : ''}`;
         card.setAttribute('data-tooltip', b.desc);
         card.innerHTML = `
             <div class="item-info">
                 <div class="item-name">${b.icon} ${b.name} <span class="item-count">${count}</span></div>
-                <div class="item-effect">+${fmt(prod)}/s</div>
+                <div class="item-effect">${effectText}</div>
             </div>
             <div class="buy-group">
                 <button class="buy-button" ${GameState.tokens < p1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(p1)}</span></button>
@@ -271,6 +520,7 @@ function renderBuildings() {
     });
 }
 
+// ===== チャートHTML =====
 function chartHTML(history, color, chartId) {
     if (history.length < 2) return '';
     const VW = 200, VH = 54;
@@ -284,11 +534,11 @@ function chartHTML(history, color, chartId) {
     const toX = i => (L + (i / (history.length - 1)) * CW).toFixed(1);
     const toY = v => (T + CH - ((v - min) / range) * CH).toFixed(1);
 
-    const pts      = history.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
-    const lastX    = toX(history.length - 1);
-    const curY     = toY(current);
-    const fillPts  = `${pts} ${(L + CW)},${T + CH} ${L},${T + CH}`;
-    const gradId   = `sg${chartId}`;
+    const pts     = history.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+    const lastX   = toX(history.length - 1);
+    const curY    = toY(current);
+    const fillPts = `${pts} ${(L + CW)},${T + CH} ${L},${T + CH}`;
+    const gradId  = `sg${chartId}`;
 
     const grids = [0.25, 0.5, 0.75].map(t => {
         const gy = (T + t * CH).toFixed(1);
@@ -320,76 +570,105 @@ function chartHTML(history, color, chartId) {
     </div>`;
 }
 
+// ===== 暗号資産描画 =====
 function renderCrypto() {
     const el = document.getElementById('cryptoListFull');
     if (!el) return;
     el.innerHTML = '';
-    const prev   = GameState.virtualAPriceHistory[GameState.virtualAPriceHistory.length - 2] || GameState.virtualAPrice;
-    const change = GameState.virtualAPrice - prev;
-    const pct    = GameState.virtualAPriceHistory.length > 1 ? ((change / prev) * 100).toFixed(1) : 0;
-    const price  = GameState.virtualAPrice;
-    const owned  = GameState.virtualA;
-    const trendColor = change >= 0 ? '#4caf50' : '#f44336';
-    const card   = document.createElement('div');
-    card.className = 'item-card trade-card';
-    card.setAttribute('data-tooltip', '時間を価値に変える謎の通貨\n保有数 × 0.5/秒を生産');
-    card.innerHTML = `
-        <div class="item-info">
-            <div class="item-name">⏰ すげぇトークン <span class="item-count">${owned}</span></div>
-            <div class="item-effect" style="color:${trendColor}">
-                $${fmt(price)} (${pct > 0 ? '+' : ''}${pct}%)
-            </div>
-            ${chartHTML(GameState.virtualAPriceHistory, trendColor, 'crypto')}
-        </div>
-        <div class="item-trade">
-            <div class="trade-row">
-                <span class="trade-label buy-label">買</span>
-                <div class="buy-group">
-                    <button class="buy-button" ${GameState.tokens < price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
-                    <button class="buy-button" ${GameState.tokens < price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
-                    <button class="buy-button" ${GameState.tokens < price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+    CRYPTOS.forEach(c => {
+        const isUnlocked = !c.unlockCondition || c.unlockCondition(GameState);
+        const card = document.createElement('div');
+
+        if (!isUnlocked) {
+            card.className = 'item-card locked-card';
+            card.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${c.icon} ??? 🔒</div>
+                    <div class="item-effect locked-hint">${c.unlockDesc}</div>
+                </div>`;
+            el.appendChild(card);
+            return;
+        }
+
+        const cr     = GameState.cryptos[c.id];
+        const prev   = cr.history[cr.history.length - 2] || cr.price;
+        const change = cr.price - prev;
+        const pct    = cr.history.length > 1 ? ((change / prev) * 100).toFixed(1) : 0;
+        const trendColor = change >= 0 ? '#4caf50' : '#f44336';
+
+        card.className = 'item-card trade-card';
+        card.setAttribute('data-tooltip', c.desc);
+        card.innerHTML = `
+            <div class="item-info">
+                <div class="item-name">${c.icon} ${c.name} <span class="item-count">${cr.owned}</span></div>
+                <div class="item-effect" style="color:${trendColor}">
+                    ${fmt(cr.price)} (${pct > 0 ? '+' : ''}${pct}%)
                 </div>
+                ${chartHTML(cr.history, trendColor, c.id)}
             </div>
-            <div class="trade-row">
-                <span class="trade-label sell-label">売</span>
-                <div class="buy-group">
-                    <button class="sell-button" ${owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
-                    <button class="sell-button" ${owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
-                    <button class="sell-button" ${owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+            <div class="item-trade">
+                <div class="trade-row">
+                    <span class="trade-label buy-label">買</span>
+                    <div class="buy-group">
+                        <button class="buy-button"  ${GameState.tokens < cr.price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(cr.price)}</span></button>
+                        <button class="buy-button"  ${GameState.tokens < cr.price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(cr.price*10)}</span></button>
+                        <button class="buy-button"  ${GameState.tokens < cr.price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(cr.price*100)}</span></button>
+                    </div>
                 </div>
-            </div>
-        </div>`;
-    const buyBtns  = card.querySelectorAll('.buy-button');
-    const sellBtns = card.querySelectorAll('.sell-button');
-    buyBtns[0].onclick  = () => buyCrypto(1);
-    buyBtns[1].onclick  = () => buyCrypto(10);
-    buyBtns[2].onclick  = () => buyCrypto(100);
-    sellBtns[0].onclick = () => sellCrypto(1);
-    sellBtns[1].onclick = () => sellCrypto(10);
-    sellBtns[2].onclick = () => sellCrypto(100);
-    el.appendChild(card);
+                <div class="trade-row">
+                    <span class="trade-label sell-label">売</span>
+                    <div class="buy-group">
+                        <button class="sell-button" ${cr.owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(cr.price)}</span></button>
+                        <button class="sell-button" ${cr.owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(cr.price*10)}</span></button>
+                        <button class="sell-button" ${cr.owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(cr.price*100)}</span></button>
+                    </div>
+                </div>
+            </div>`;
+        const buyBtns  = card.querySelectorAll('.buy-button');
+        const sellBtns = card.querySelectorAll('.sell-button');
+        buyBtns[0].onclick  = () => buyCrypto(c.id, 1);
+        buyBtns[1].onclick  = () => buyCrypto(c.id, 10);
+        buyBtns[2].onclick  = () => buyCrypto(c.id, 100);
+        sellBtns[0].onclick = () => sellCrypto(c.id, 1);
+        sellBtns[1].onclick = () => sellCrypto(c.id, 10);
+        sellBtns[2].onclick = () => sellCrypto(c.id, 100);
+        el.appendChild(card);
+    });
 }
 
+// ===== 株式描画 =====
 function renderStocks() {
     const el = document.getElementById('stocksListFull');
     if (!el) return;
     el.innerHTML = '';
     STOCKS.forEach(s => {
+        const isUnlocked = !s.unlockCondition || s.unlockCondition(GameState);
+        const card = document.createElement('div');
+
+        if (!isUnlocked) {
+            card.className = 'item-card locked-card';
+            card.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${s.icon} ??? 🔒</div>
+                    <div class="item-effect locked-hint">${s.unlockDesc}</div>
+                </div>`;
+            el.appendChild(card);
+            return;
+        }
+
         const st     = GameState.stocks[s.id];
         const prev   = st.history[st.history.length - 2] || st.price;
         const change = st.price - prev;
         const pct    = ((change / prev) * 100).toFixed(1);
-        const price  = st.price;
-        const owned  = st.owned;
         const trendColor = change >= 0 ? '#4caf50' : '#f44336';
-        const card   = document.createElement('div');
+
         card.className = 'item-card trade-card';
-        card.setAttribute('data-tooltip', `${s.desc}\n保有株 × 価格 × 1%を2秒ごとに配当`);
+        card.setAttribute('data-tooltip', `${s.desc}\n配当: 保有株 × 価格 × ${(s.dividendRate * 100).toFixed(1)}%/秒`);
         card.innerHTML = `
             <div class="item-info">
-                <div class="item-name">${s.name} <span class="item-count">${owned}</span></div>
+                <div class="item-name">${s.icon} ${s.name} <span class="item-count">${st.owned}</span></div>
                 <div class="item-effect" style="color:${trendColor}">
-                    ¥${fmt(price)} (${pct > 0 ? '+' : ''}${pct}%)
+                    ¥${fmt(st.price)} (${pct > 0 ? '+' : ''}${pct}%)
                 </div>
                 ${chartHTML(st.history, trendColor, s.id)}
             </div>
@@ -397,17 +676,17 @@ function renderStocks() {
                 <div class="trade-row">
                     <span class="trade-label buy-label">買</span>
                     <div class="buy-group">
-                        <button class="buy-button" ${GameState.tokens < price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
-                        <button class="buy-button" ${GameState.tokens < price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
-                        <button class="buy-button" ${GameState.tokens < price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                        <button class="buy-button"  ${GameState.tokens < st.price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(st.price)}</span></button>
+                        <button class="buy-button"  ${GameState.tokens < st.price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(st.price*10)}</span></button>
+                        <button class="buy-button"  ${GameState.tokens < st.price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(st.price*100)}</span></button>
                     </div>
                 </div>
                 <div class="trade-row">
                     <span class="trade-label sell-label">売</span>
                     <div class="buy-group">
-                        <button class="sell-button" ${owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
-                        <button class="sell-button" ${owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
-                        <button class="sell-button" ${owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                        <button class="sell-button" ${st.owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(st.price)}</span></button>
+                        <button class="sell-button" ${st.owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(st.price*10)}</span></button>
+                        <button class="sell-button" ${st.owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(st.price*100)}</span></button>
                     </div>
                 </div>
             </div>`;
@@ -423,6 +702,7 @@ function renderStocks() {
     });
 }
 
+// ===== イベント設定 =====
 function setupEvents() {
     const btn = document.getElementById('tokenButton');
     if (btn) btn.addEventListener('click', () => click());
@@ -436,7 +716,7 @@ function setupEvents() {
     }));
 }
 
-// JS ベースのツールチップ（position:fixed でレイヤー問題なし）
+// ===== ツールチップ =====
 function setupTooltip() {
     const tip = document.createElement('div');
     tip.id = 'game-tooltip';
@@ -459,66 +739,171 @@ function setupTooltip() {
     document.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 
-// 相場トレンドを更新（ブル/ベア、変動率付き）
+// ===== 相場変動（ブル/ベア）=====
 function tickMarket() {
-    // 仮想通貨
-    if (GameState.cryptoTrendDuration <= 0) {
-        // 新しい相場を決める（5〜20秒続く）
-        GameState.cryptoTrend = (Math.random() - 0.48) * 8000; // 正=ブル、負=ベア
-        GameState.cryptoTrendDuration = 5 + Math.floor(Math.random() * 16);
-    }
-    GameState.cryptoTrendDuration--;
-    const cryptoNoise = (Math.random() - 0.5) * 5000;
-    GameState.virtualAPrice = Math.max(5000,
-        GameState.virtualAPrice + GameState.cryptoTrend + cryptoNoise
-    );
-    GameState.virtualAPriceHistory.push(GameState.virtualAPrice);
-    if (GameState.virtualAPriceHistory.length > 60) GameState.virtualAPriceHistory.shift();
+    CRYPTOS.forEach(c => {
+        if (!GameState.cryptoTrends[c.id] || GameState.cryptoTrends[c.id].duration <= 0) {
+            GameState.cryptoTrends[c.id] = {
+                trend:    (Math.random() - c.bearBias) * c.trendStrength,
+                duration: 5 + Math.floor(Math.random() * 16),
+            };
+        }
+        GameState.cryptoTrends[c.id].duration--;
+        const noise = (Math.random() - 0.5) * c.noise;
+        const cr = GameState.cryptos[c.id];
+        cr.price = Math.max(c.minPrice, cr.price + GameState.cryptoTrends[c.id].trend + noise);
+        cr.history.push(cr.price);
+        if (cr.history.length > 60) cr.history.shift();
+    });
 
-    // 株式
     STOCKS.forEach(s => {
         if (!GameState.stockTrends[s.id] || GameState.stockTrends[s.id].duration <= 0) {
             GameState.stockTrends[s.id] = {
-                trend:    (Math.random() - 0.48) * 60,
+                trend:    (Math.random() - 0.48) * s.trendStrength,
                 duration: 5 + Math.floor(Math.random() * 16),
             };
         }
         GameState.stockTrends[s.id].duration--;
         const st    = GameState.stocks[s.id];
-        const noise = (Math.random() - 0.5) * 40;
-        st.price = Math.max(10, st.price + GameState.stockTrends[s.id].trend + noise);
+        const noise = (Math.random() - 0.5) * s.noise;
+        st.price = Math.max(1, st.price + GameState.stockTrends[s.id].trend + noise);
         st.history.push(st.price);
         if (st.history.length > 60) st.history.shift();
     });
 }
 
+// ===== SNS自動クリックエフェクト =====
+function showAutoClickFloats(totalValue, count) {
+    const btn = document.getElementById('tokenButton');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const numFloats = Math.min(Math.max(1, Math.floor(Math.log2(count + 1))), 6);
+    const perFloat  = Math.floor(totalValue / numFloats);
+    for (let i = 0; i < numFloats; i++) {
+        setTimeout(() => {
+            const float = document.createElement('div');
+            float.className = 'click-float auto-click-float';
+            float.textContent = `+${fmt(perFloat)}`;
+            const angle  = (Math.PI * 2 / numFloats) * i + (Math.random() - 0.5) * 0.8;
+            const radius = 30 + Math.random() * 30;
+            float.style.left = (rect.left + rect.width / 2 + Math.cos(angle) * radius) + 'px';
+            float.style.top  = (rect.top  + rect.height / 2 + Math.sin(angle) * radius - 10) + 'px';
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 900);
+        }, i * 80);
+    }
+}
+
+// ===== 取引所 自動売買 =====
+function autoTrade() {
+    const exchangeCount = GameState.buildings['exchange']?.count ?? 0;
+    if (exchangeCount === 0) return;
+
+    let tradesLeft = exchangeCount;
+
+    // 全暗号資産を対象
+    for (const c of CRYPTOS) {
+        if (tradesLeft <= 0) break;
+        if (c.unlockCondition && !c.unlockCondition(GameState)) continue;
+        const cr = GameState.cryptos[c.id];
+        if (cr.history.length < 10) continue;
+
+        const recentMin = Math.min(...cr.history);
+        const recentMax = Math.max(...cr.history);
+        const buyThresh  = recentMin * 1.05;
+        const sellThresh = recentMax * 0.95;
+
+        if (cr.price <= buyThresh && GameState.tokens >= cr.price) {
+            GameState.tokens -= cr.price;
+            cr.owned++;
+            GameState.totalStockTraded += cr.price;
+            showNotification(`🤖 自動買: ${c.icon}${c.name}`, 'auto-trade');
+            tradesLeft--;
+        } else if (cr.price >= sellThresh && cr.owned > 0) {
+            const earned = cr.price;
+            cr.owned--;
+            GameState.tokens += earned;
+            GameState.totalTokensEarned += earned;
+            showNotification(`🤖 自動売: ${c.icon}${c.name} +${fmt(earned)}`, 'auto-trade');
+            tradesLeft--;
+        }
+    }
+
+    // 全株式を対象
+    for (const s of STOCKS) {
+        if (tradesLeft <= 0) break;
+        if (s.unlockCondition && !s.unlockCondition(GameState)) continue;
+        const st = GameState.stocks[s.id];
+        if (st.history.length < 10) continue;
+
+        const recentMin = Math.min(...st.history);
+        const recentMax = Math.max(...st.history);
+        const buyThresh  = recentMin * 1.05;
+        const sellThresh = recentMax * 0.95;
+
+        if (st.price <= buyThresh && GameState.tokens >= st.price) {
+            GameState.tokens -= st.price;
+            st.owned++;
+            GameState.totalStockTraded += st.price;
+            showNotification(`🤖 自動買: ${s.icon}${s.name}`, 'auto-trade');
+            tradesLeft--;
+        } else if (st.price >= sellThresh && st.owned > 0) {
+            const earned = st.price;
+            st.owned--;
+            GameState.tokens += earned;
+            GameState.totalTokensEarned += earned;
+            GameState.totalStockTraded += earned;
+            showNotification(`🤖 自動売: ${s.icon}${s.name} +${fmt(earned)}`, 'auto-trade');
+            tradesLeft--;
+        }
+    }
+}
+
+// ===== ゲームループ =====
 function gameLoop() {
     setInterval(() => {
         tick++;
 
-        // 生産計算
+        // 通常施設からの生産（autoClick/autoTrade施設を除く）
         let prod = 0;
         BUILDINGS.forEach(b => {
+            if (b.autoClick || b.autoTrade) return;
             const count = GameState.buildings[b.id].count;
             if (count > 0) prod += b.baseProduction * count * Math.pow(b.multiplier, count - 1);
         });
-        prod += GameState.virtualA * 0.5;
+
+        // SNS自動クリック（clickValue × count）
+        const snsCount = GameState.buildings['sns']?.count ?? 0;
+        if (snsCount > 0) {
+            const autoClickValue = snsCount * GameState.clickValue;
+            prod += autoClickValue;
+            showAutoClickFloats(autoClickValue, snsCount);
+        }
+
+        // 暗号資産からの生産
+        CRYPTOS.forEach(c => {
+            const owned = GameState.cryptos[c.id]?.owned ?? 0;
+            if (owned > 0) prod += c.production * owned;
+        });
+
         GameState.perSecond = prod;
         GameState.productionHistory.push(prod);
         if (GameState.productionHistory.length > 30) GameState.productionHistory.shift();
         GameState.tokens += prod;
         GameState.totalTokensEarned += prod;
 
-        // 市場変動（毎秒）
+        // 相場変動（毎秒）
         tickMarket();
 
         // 株式配当（毎秒）
-        let dividends = 0;
         STOCKS.forEach(s => {
-            dividends += GameState.stocks[s.id].owned * GameState.stocks[s.id].price * 0.005;
+            const dividends = GameState.stocks[s.id].owned * GameState.stocks[s.id].price * s.dividendRate;
+            GameState.tokens += dividends;
+            GameState.totalTokensEarned += dividends;
         });
-        GameState.tokens += dividends;
-        GameState.totalTokensEarned += dividends;
+
+        // 取引所 自動売買
+        autoTrade();
 
         updateDisplay();
         updateGameDate();
@@ -529,6 +914,7 @@ function gameLoop() {
     setInterval(() => localStorage.setItem('game', JSON.stringify(GameState)), 5000);
 }
 
+// ===== クリック =====
 function click() {
     GameState.tokens += GameState.clickValue;
     GameState.totalTokensEarned += GameState.clickValue;
@@ -550,6 +936,7 @@ function showClickFloat(value) {
     setTimeout(() => float.remove(), 900);
 }
 
+// ===== 購入・売却 =====
 function buyBuilding(b, n = 1) {
     const price = bulkBuildingPrice(b, n);
     if (GameState.tokens >= price) {
@@ -557,7 +944,6 @@ function buyBuilding(b, n = 1) {
         GameState.buildings[b.id].count += n;
         GameState.purchaseCount += n;
         GameState.entrepreneurLevel = Math.floor(Math.sqrt(GameState.purchaseCount)) + 1;
-        updateCharts();
         render();
         showNotification(`${b.icon} ${b.name} ×${n}`, 'purchase');
         checkAchievements();
@@ -566,42 +952,44 @@ function buyBuilding(b, n = 1) {
     }
 }
 
-function buyCrypto(n = 1) {
-    const price = GameState.virtualAPrice * n;
+function buyCrypto(id, n = 1) {
+    const c  = CRYPTOS.find(c => c.id === id);
+    const cr = GameState.cryptos[id];
+    const price = cr.price * n;
     if (GameState.tokens >= price) {
         GameState.tokens -= price;
-        GameState.virtualA += n;
+        cr.owned += n;
         render();
-        showNotification(`⏰ すげぇトークン ×${n} 購入`, 'purchase');
+        showNotification(`${c.icon} ${c.name} ×${n} 購入`, 'purchase');
         checkAchievements();
     } else {
         showNotification(`${fmt(price - GameState.tokens)} 不足`, 'error');
     }
 }
 
-function sellCrypto(n = 1) {
-    if (GameState.virtualA < n) {
-        showNotification(`保有数が足りません`, 'error');
-        return;
-    }
-    const earned = GameState.virtualAPrice * n;
-    GameState.virtualA -= n;
+function sellCrypto(id, n = 1) {
+    const c  = CRYPTOS.find(c => c.id === id);
+    const cr = GameState.cryptos[id];
+    if (cr.owned < n) { showNotification(`保有数が足りません`, 'error'); return; }
+    const earned = cr.price * n;
+    cr.owned -= n;
     GameState.tokens += earned;
     GameState.totalTokensEarned += earned;
     render();
     updateDisplay();
-    showNotification(`⏰ すげぇトークン ×${n} 売却 +${fmt(earned)}`, 'sell');
+    showNotification(`${c.icon} ${c.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
 }
 
 function buyStock(id, n = 1) {
-    const s     = STOCKS.find(s => s.id === id);
-    const st    = GameState.stocks[id];
+    const s   = STOCKS.find(s => s.id === id);
+    const st  = GameState.stocks[id];
     const price = st.price * n;
     if (GameState.tokens >= price) {
         GameState.tokens -= price;
         st.owned += n;
+        GameState.totalStockTraded += price;
         render();
-        showNotification(`📊 ${s.name} ×${n} 購入`, 'purchase');
+        showNotification(`${s.icon} ${s.name} ×${n} 購入`, 'purchase');
         checkAchievements();
     } else {
         showNotification(`${fmt(price - GameState.tokens)} 不足`, 'error');
@@ -611,53 +999,43 @@ function buyStock(id, n = 1) {
 function sellStock(id, n = 1) {
     const s  = STOCKS.find(s => s.id === id);
     const st = GameState.stocks[id];
-    if (st.owned < n) {
-        showNotification(`保有数が足りません`, 'error');
-        return;
-    }
+    if (st.owned < n) { showNotification(`保有数が足りません`, 'error'); return; }
     const earned = st.price * n;
     st.owned -= n;
     GameState.tokens += earned;
     GameState.totalTokensEarned += earned;
+    GameState.totalStockTraded += earned;
     render();
     updateDisplay();
-    showNotification(`📊 ${s.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
+    showNotification(`${s.icon} ${s.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
 }
 
+// ===== 表示更新 =====
 function updateDisplay() {
     const el = id => document.getElementById(id);
-    if (el('tokenCount'))      el('tokenCount').textContent      = fmt(GameState.tokens);
-    if (el('perSecond'))       el('perSecond').textContent       = fmt(GameState.perSecond);
-    if (el('totalTokens'))     el('totalTokens').textContent     = fmt(GameState.totalTokensEarned);
-    if (el('clickValue'))      el('clickValue').textContent      = fmt(GameState.clickValue);
-    if (el('arenaPerSecond'))  el('arenaPerSecond').textContent  = fmt(GameState.perSecond);
+    if (el('tokenCount'))        el('tokenCount').textContent        = fmt(GameState.tokens);
+    if (el('perSecond'))         el('perSecond').textContent         = fmt(GameState.perSecond);
+    if (el('totalTokens'))       el('totalTokens').textContent       = fmt(GameState.totalTokensEarned);
+    if (el('clickValue'))        el('clickValue').textContent        = fmt(GameState.clickValue);
+    if (el('arenaPerSecond'))    el('arenaPerSecond').textContent    = fmt(GameState.perSecond);
     if (el('entrepreneurLevel')) el('entrepreneurLevel').textContent = `Lv.${GameState.entrepreneurLevel}`;
-    if (el('arenaLevel'))      el('arenaLevel').textContent      = GameState.entrepreneurLevel;
+    if (el('arenaLevel'))        el('arenaLevel').textContent        = GameState.entrepreneurLevel;
 
     let port = GameState.tokens;
     BUILDINGS.forEach(b => {
         const count = GameState.buildings[b.id].count;
         for (let i = 0; i < count; i++) port += b.basePrice * Math.pow(b.multiplier, i);
     });
-    port += GameState.virtualA * GameState.virtualAPrice;
-    STOCKS.forEach(s => { port += GameState.stocks[s.id].owned * GameState.stocks[s.id].price; });
+    CRYPTOS.forEach(c => {
+        const cr = GameState.cryptos[c.id];
+        if (cr) port += cr.owned * cr.price;
+    });
+    STOCKS.forEach(s => {
+        port += GameState.stocks[s.id].owned * GameState.stocks[s.id].price;
+    });
     if (el('portfolioValue')) el('portfolioValue').textContent = fmt(port);
 }
 
-function updateCharts() {
-    // Chart.js は任意実装 - 現在は無効
-}
-
-function initBuildings() {
-    BUILDINGS.forEach(b => {
-        if (!GameState.buildings[b.id]) GameState.buildings[b.id] = { count: 0 };
-    });
-}
-
-function initStocks() {
-    STOCKS.forEach(s => {
-        if (!GameState.stocks[s.id]) GameState.stocks[s.id] = { owned: 0, price: s.basePrice, history: [s.basePrice] };
-    });
-}
+function updateCharts() {}
 
 window.addEventListener('DOMContentLoaded', init);

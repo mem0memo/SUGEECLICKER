@@ -338,6 +338,18 @@ body {
     100% { transform: translateY(-70px) scale(0.9); opacity: 0; }
 }
 
+.auto-click-float {
+    color: #ffcc00;
+    font-size: 0.95em;
+    animation: floatUpAuto 0.9s ease-out forwards;
+}
+
+@keyframes floatUpAuto {
+    0%   { transform: translateY(0) scale(0.9);  opacity: 0.85; }
+    50%  { transform: translateY(-30px) scale(1); opacity: 0.7; }
+    100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+}
+
 /* ===== 右パネル ===== */
 .right-panel {
     background: var(--panel-bg);
@@ -451,6 +463,21 @@ body {
 .item-card.unaffordable:hover {
     border-color: var(--border-color);
     background: var(--panel-light);
+}
+
+.item-card.locked-card {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+.item-card.locked-card:hover {
+    border-color: var(--border-color);
+    background: var(--panel-light);
+}
+
+.locked-hint {
+    color: var(--warn-color);
+    font-size: 0.82em;
 }
 
 .item-info {
@@ -729,6 +756,13 @@ body {
 .notification.sell {
     border-color: #ef9a9a;
     color: #ef9a9a;
+}
+
+.notification.auto-trade {
+    border-color: #7986cb;
+    color: #7986cb;
+    font-size: 0.85em;
+    opacity: 0.85;
 }
 
 @keyframes slideIn {
