@@ -24,6 +24,10 @@ const GameState = {
     entrepreneurLevel: 1,
     productionHistory: [0],
     unlockedAchievements: [],
+    // 相場状態
+    cryptoTrend: 0,         // 正=ブル、負=ベア、累積バイアス
+    cryptoTrendDuration: 0, // 現相場の残り秒数
+    stockTrends: {},        // { [id]: { trend, duration } }
 };
 
 let upgradesChart = null;
@@ -264,6 +268,55 @@ function renderBuildings() {
     });
 }
 
+function chartHTML(history, color, chartId) {
+    if (history.length < 2) return '';
+    const VW = 200, VH = 54;
+    const L = 2, R = 2, T = 4, B = 4;
+    const CW = VW - L - R, CH = VH - T - B;
+
+    const min     = Math.min(...history);
+    const max     = Math.max(...history);
+    const range   = max - min || 1;
+    const current = history[history.length - 1];
+    const toX = i => (L + (i / (history.length - 1)) * CW).toFixed(1);
+    const toY = v => (T + CH - ((v - min) / range) * CH).toFixed(1);
+
+    const pts      = history.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+    const lastX    = toX(history.length - 1);
+    const curY     = toY(current);
+    const fillPts  = `${pts} ${(L + CW)},${T + CH} ${L},${T + CH}`;
+    const gradId   = `sg${chartId}`;
+
+    const grids = [0.25, 0.5, 0.75].map(t => {
+        const gy = (T + t * CH).toFixed(1);
+        return `<line x1="${L}" y1="${gy}" x2="${L + CW}" y2="${gy}" stroke="#252525" stroke-width="0.8"/>`;
+    }).join('');
+
+    const svg = `<svg class="sparkline-svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="${VH}" preserveAspectRatio="none">
+        <defs>
+            <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="${color}" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+            </linearGradient>
+        </defs>
+        <rect x="${L}" y="${T}" width="${CW}" height="${CH}" fill="#111" rx="1"/>
+        ${grids}
+        <polygon points="${fillPts}" fill="url(#${gradId})"/>
+        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <line x1="${L}" y1="${curY}" x2="${L + CW}" y2="${curY}" stroke="${color}" stroke-width="0.7" stroke-dasharray="3,3" opacity="0.6"/>
+        <circle cx="${lastX}" cy="${curY}" r="2.5" fill="${color}"/>
+    </svg>`;
+
+    return `<div class="chart-area">
+        ${svg}
+        <div class="chart-labels">
+            <span class="chart-extremes">${fmt(max)}</span>
+            <span class="chart-price" style="color:${color}">${fmt(current)}</span>
+            <span class="chart-extremes">${fmt(min)}</span>
+        </div>
+    </div>`;
+}
+
 function renderCrypto() {
     const el = document.getElementById('cryptoListFull');
     if (!el) return;
@@ -271,28 +324,46 @@ function renderCrypto() {
     const prev   = GameState.virtualAPriceHistory[GameState.virtualAPriceHistory.length - 2] || GameState.virtualAPrice;
     const change = GameState.virtualAPrice - prev;
     const pct    = GameState.virtualAPriceHistory.length > 1 ? ((change / prev) * 100).toFixed(1) : 0;
-    const p1     = GameState.virtualAPrice;
-    const p10    = p1 * 10;
-    const p100   = p1 * 100;
+    const price  = GameState.virtualAPrice;
+    const owned  = GameState.virtualA;
+    const trendColor = change >= 0 ? '#4caf50' : '#f44336';
     const card   = document.createElement('div');
-    card.className = `item-card ${GameState.tokens < p1 ? 'unaffordable' : ''}`;
+    card.className = 'item-card trade-card';
     card.setAttribute('data-tooltip', '時間を価値に変える謎の通貨\n保有数 × 0.5/秒を生産');
     card.innerHTML = `
         <div class="item-info">
-            <div class="item-name">⏰ すげぇトークン <span class="item-count">${GameState.virtualA}</span></div>
-            <div class="item-effect" style="color:${change >= 0 ? '#4caf50' : '#f44336'}">
-                $${fmt(p1)} (${pct > 0 ? '+' : ''}${pct}%)
+            <div class="item-name">⏰ すげぇトークン <span class="item-count">${owned}</span></div>
+            <div class="item-effect" style="color:${trendColor}">
+                $${fmt(price)} (${pct > 0 ? '+' : ''}${pct}%)
             </div>
+            ${chartHTML(GameState.virtualAPriceHistory, trendColor, 'crypto')}
         </div>
-        <div class="buy-group">
-            <button class="buy-button" ${GameState.tokens < p1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(p1)}</span></button>
-            <button class="buy-button" ${GameState.tokens < p10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(p10)}</span></button>
-            <button class="buy-button" ${GameState.tokens < p100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(p100)}</span></button>
+        <div class="item-trade">
+            <div class="trade-row">
+                <span class="trade-label buy-label">買</span>
+                <div class="buy-group">
+                    <button class="buy-button" ${GameState.tokens < price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
+                    <button class="buy-button" ${GameState.tokens < price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
+                    <button class="buy-button" ${GameState.tokens < price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                </div>
+            </div>
+            <div class="trade-row">
+                <span class="trade-label sell-label">売</span>
+                <div class="buy-group">
+                    <button class="sell-button" ${owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
+                    <button class="sell-button" ${owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
+                    <button class="sell-button" ${owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                </div>
+            </div>
         </div>`;
-    const btns = card.querySelectorAll('.buy-button');
-    btns[0].onclick = () => buyCrypto(1);
-    btns[1].onclick = () => buyCrypto(10);
-    btns[2].onclick = () => buyCrypto(100);
+    const buyBtns  = card.querySelectorAll('.buy-button');
+    const sellBtns = card.querySelectorAll('.sell-button');
+    buyBtns[0].onclick  = () => buyCrypto(1);
+    buyBtns[1].onclick  = () => buyCrypto(10);
+    buyBtns[2].onclick  = () => buyCrypto(100);
+    sellBtns[0].onclick = () => sellCrypto(1);
+    sellBtns[1].onclick = () => sellCrypto(10);
+    sellBtns[2].onclick = () => sellCrypto(100);
     el.appendChild(card);
 }
 
@@ -301,32 +372,50 @@ function renderStocks() {
     if (!el) return;
     el.innerHTML = '';
     STOCKS.forEach(s => {
-        const st   = GameState.stocks[s.id];
-        const prev = st.history[st.history.length - 2] || st.price;
+        const st     = GameState.stocks[s.id];
+        const prev   = st.history[st.history.length - 2] || st.price;
         const change = st.price - prev;
-        const pct  = ((change / prev) * 100).toFixed(1);
-        const p1   = st.price;
-        const p10  = p1 * 10;
-        const p100 = p1 * 100;
-        const card = document.createElement('div');
-        card.className = `item-card ${GameState.tokens < p1 ? 'unaffordable' : ''}`;
+        const pct    = ((change / prev) * 100).toFixed(1);
+        const price  = st.price;
+        const owned  = st.owned;
+        const trendColor = change >= 0 ? '#4caf50' : '#f44336';
+        const card   = document.createElement('div');
+        card.className = 'item-card trade-card';
         card.setAttribute('data-tooltip', `${s.desc}\n保有株 × 価格 × 1%を2秒ごとに配当`);
         card.innerHTML = `
             <div class="item-info">
-                <div class="item-name">${s.name} <span class="item-count">${st.owned}</span></div>
-                <div class="item-effect" style="color:${change >= 0 ? '#4caf50' : '#f44336'}">
-                    ¥${fmt(p1)} (${pct > 0 ? '+' : ''}${pct}%)
+                <div class="item-name">${s.name} <span class="item-count">${owned}</span></div>
+                <div class="item-effect" style="color:${trendColor}">
+                    ¥${fmt(price)} (${pct > 0 ? '+' : ''}${pct}%)
                 </div>
+                ${chartHTML(st.history, trendColor, s.id)}
             </div>
-            <div class="buy-group">
-                <button class="buy-button" ${GameState.tokens < p1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(p1)}</span></button>
-                <button class="buy-button" ${GameState.tokens < p10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(p10)}</span></button>
-                <button class="buy-button" ${GameState.tokens < p100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(p100)}</span></button>
+            <div class="item-trade">
+                <div class="trade-row">
+                    <span class="trade-label buy-label">買</span>
+                    <div class="buy-group">
+                        <button class="buy-button" ${GameState.tokens < price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
+                        <button class="buy-button" ${GameState.tokens < price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
+                        <button class="buy-button" ${GameState.tokens < price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                    </div>
+                </div>
+                <div class="trade-row">
+                    <span class="trade-label sell-label">売</span>
+                    <div class="buy-group">
+                        <button class="sell-button" ${owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(price)}</span></button>
+                        <button class="sell-button" ${owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(price*10)}</span></button>
+                        <button class="sell-button" ${owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(price*100)}</span></button>
+                    </div>
+                </div>
             </div>`;
-        const btns = card.querySelectorAll('.buy-button');
-        btns[0].onclick = () => buyStock(s.id, 1);
-        btns[1].onclick = () => buyStock(s.id, 10);
-        btns[2].onclick = () => buyStock(s.id, 100);
+        const buyBtns  = card.querySelectorAll('.buy-button');
+        const sellBtns = card.querySelectorAll('.sell-button');
+        buyBtns[0].onclick  = () => buyStock(s.id, 1);
+        buyBtns[1].onclick  = () => buyStock(s.id, 10);
+        buyBtns[2].onclick  = () => buyStock(s.id, 100);
+        sellBtns[0].onclick = () => sellStock(s.id, 1);
+        sellBtns[1].onclick = () => sellStock(s.id, 10);
+        sellBtns[2].onclick = () => sellStock(s.id, 100);
         el.appendChild(card);
     });
 }
@@ -367,8 +456,44 @@ function setupTooltip() {
     document.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 
+// 相場トレンドを更新（ブル/ベア、変動率付き）
+function tickMarket() {
+    // 仮想通貨
+    if (GameState.cryptoTrendDuration <= 0) {
+        // 新しい相場を決める（5〜20秒続く）
+        GameState.cryptoTrend = (Math.random() - 0.48) * 8000; // 正=ブル、負=ベア
+        GameState.cryptoTrendDuration = 5 + Math.floor(Math.random() * 16);
+    }
+    GameState.cryptoTrendDuration--;
+    const cryptoNoise = (Math.random() - 0.5) * 5000;
+    GameState.virtualAPrice = Math.max(5000,
+        GameState.virtualAPrice + GameState.cryptoTrend + cryptoNoise
+    );
+    GameState.virtualAPriceHistory.push(GameState.virtualAPrice);
+    if (GameState.virtualAPriceHistory.length > 60) GameState.virtualAPriceHistory.shift();
+
+    // 株式
+    STOCKS.forEach(s => {
+        if (!GameState.stockTrends[s.id] || GameState.stockTrends[s.id].duration <= 0) {
+            GameState.stockTrends[s.id] = {
+                trend:    (Math.random() - 0.48) * 60,
+                duration: 5 + Math.floor(Math.random() * 16),
+            };
+        }
+        GameState.stockTrends[s.id].duration--;
+        const st    = GameState.stocks[s.id];
+        const noise = (Math.random() - 0.5) * 40;
+        st.price = Math.max(10, st.price + GameState.stockTrends[s.id].trend + noise);
+        st.history.push(st.price);
+        if (st.history.length > 60) st.history.shift();
+    });
+}
+
 function gameLoop() {
     setInterval(() => {
+        tick++;
+
+        // 生産計算
         let prod = 0;
         BUILDINGS.forEach(b => {
             const count = GameState.buildings[b.id].count;
@@ -380,36 +505,23 @@ function gameLoop() {
         if (GameState.productionHistory.length > 30) GameState.productionHistory.shift();
         GameState.tokens += prod;
         GameState.totalTokensEarned += prod;
-        updateDisplay();
-        updateGameDate();
-        checkAchievements();
-    }, 1000);
 
-    setInterval(() => {
-        tick++;
-        GameState.virtualAPrice = Math.max(10000, GameState.virtualAPrice + (Math.random() - 0.5) * 4000);
-        GameState.virtualAPriceHistory.push(GameState.virtualAPrice);
-        if (GameState.virtualAPriceHistory.length > 30) GameState.virtualAPriceHistory.shift();
+        // 市場変動（毎秒）
+        tickMarket();
 
-        STOCKS.forEach(s => {
-            const st = GameState.stocks[s.id];
-            st.price = Math.max(10, st.price + (Math.random() - 0.5) * 100);
-            st.history.push(st.price);
-            if (st.history.length > 30) st.history.shift();
-        });
-
+        // 株式配当（毎秒）
         let dividends = 0;
         STOCKS.forEach(s => {
-            dividends += GameState.stocks[s.id].owned * GameState.stocks[s.id].price * 0.01;
+            dividends += GameState.stocks[s.id].owned * GameState.stocks[s.id].price * 0.005;
         });
         GameState.tokens += dividends;
         GameState.totalTokensEarned += dividends;
 
-        if (tick % 3 === 0) {
-            updateCharts();
-            render();
-        }
-    }, 2000);
+        updateDisplay();
+        updateGameDate();
+        checkAchievements();
+        render();
+    }, 1000);
 
     setInterval(() => localStorage.setItem('game', JSON.stringify(GameState)), 5000);
 }
@@ -457,11 +569,25 @@ function buyCrypto(n = 1) {
         GameState.tokens -= price;
         GameState.virtualA += n;
         render();
-        showNotification(`⏰ すげぇトークン ×${n}`, 'purchase');
+        showNotification(`⏰ すげぇトークン ×${n} 購入`, 'purchase');
         checkAchievements();
     } else {
         showNotification(`${fmt(price - GameState.tokens)} 不足`, 'error');
     }
+}
+
+function sellCrypto(n = 1) {
+    if (GameState.virtualA < n) {
+        showNotification(`保有数が足りません`, 'error');
+        return;
+    }
+    const earned = GameState.virtualAPrice * n;
+    GameState.virtualA -= n;
+    GameState.tokens += earned;
+    GameState.totalTokensEarned += earned;
+    render();
+    updateDisplay();
+    showNotification(`⏰ すげぇトークン ×${n} 売却 +${fmt(earned)}`, 'sell');
 }
 
 function buyStock(id, n = 1) {
@@ -472,11 +598,27 @@ function buyStock(id, n = 1) {
         GameState.tokens -= price;
         st.owned += n;
         render();
-        showNotification(`📊 ${s.name} ×${n}`, 'purchase');
+        showNotification(`📊 ${s.name} ×${n} 購入`, 'purchase');
         checkAchievements();
     } else {
         showNotification(`${fmt(price - GameState.tokens)} 不足`, 'error');
     }
+}
+
+function sellStock(id, n = 1) {
+    const s  = STOCKS.find(s => s.id === id);
+    const st = GameState.stocks[id];
+    if (st.owned < n) {
+        showNotification(`保有数が足りません`, 'error');
+        return;
+    }
+    const earned = st.price * n;
+    st.owned -= n;
+    GameState.tokens += earned;
+    GameState.totalTokensEarned += earned;
+    render();
+    updateDisplay();
+    showNotification(`📊 ${s.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
 }
 
 function updateDisplay() {
