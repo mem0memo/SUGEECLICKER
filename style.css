@@ -350,6 +350,17 @@ body {
     100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
 }
 
+.heart-float {
+    font-size: 1.3em;
+    animation: floatHeart 1.1s ease-out forwards;
+}
+
+@keyframes floatHeart {
+    0%   { transform: translateY(0) scale(0.8) rotate(-10deg); opacity: 1; }
+    40%  { transform: translateY(-25px) scale(1.2) rotate(8deg); opacity: 0.9; }
+    100% { transform: translateY(-65px) scale(0.7) rotate(-5deg); opacity: 0; }
+}
+
 /* ===== 右パネル ===== */
 .right-panel {
     background: var(--panel-bg);
@@ -715,12 +726,12 @@ body {
 /* ===== 通知 ===== */
 .notifications {
     position: fixed;
-    top: 16px;
+    bottom: 16px;
     right: 16px;
     z-index: 1000;
     pointer-events: none;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 6px;
 }
 

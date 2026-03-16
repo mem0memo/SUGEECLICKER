@@ -42,7 +42,8 @@ const BUILDINGS = [
     { id: 'blog',      name: 'ブログポータル', desc: '某SNS以前から俺のブログは人気だった。記事が金になる', icon: '📝', basePrice: 80000,   baseProduction: 35,   multiplier: 1.15 },
     { id: 'media',     name: 'メディア帝国',  desc: '情報こそ21世紀の石油だ。全チャンネル買収を目指せ',  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15 },
     { id: 'salon',     name: '夜の社交場',    desc: '酒と人脈と謎の出会い。一杯飲んでちょめちょめ',       icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15 },
-    { id: 'exchange',  name: '取引所',        desc: '価格レンジを読んで自動売買。所持数=同時取引数',       icon: '💰', basePrice: 8000000, baseProduction: 0,    multiplier: 1.15, autoTrade: true },
+    { id: 'newhalf',   name: 'ニューハーフ', desc: '夜の社交場で出会った敏腕トレーダー。株式市場を誰より読む。保有数=毎秒の株式自動売買数', icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoTradeStocks: true },
+    { id: 'exchange',  name: '取引所',        desc: '価格レンジを読んで自動売買。所持数=同時取引数（暗号資産＋株式）', icon: '💰', basePrice: 8000000, baseProduction: 0,    multiplier: 1.15, autoTrade: true },
 ];
 
 // ===== 暗号資産定義（5種）=====
@@ -228,8 +229,8 @@ const ACHIEVEMENTS = [
       bonus: 600 },
 
     { id: 'night_diversity', name: '夜の多様な出会い',   icon: '💃',
-      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: '夜の社交場を8個購入',
-      check: gs => (gs.buildings['salon']?.count ?? 0) >= 8,
+      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: 'ニューハーフを1人雇用',
+      check: gs => (gs.buildings['newhalf']?.count ?? 0) >= 1,
       bonus: 1200 },
 
     { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤',
@@ -487,13 +488,15 @@ function renderBuildings() {
         const p10   = bulkBuildingPrice(b, 10);
         const p100  = bulkBuildingPrice(b, 100);
 
-        // 効果表示: autoClickはclickValue×count、autoTradeは自動売買、それ以外は/s
+        // 効果表示: autoClickはclickValue×count、autoTrade/autoTradeStocksは自動売買、それ以外は/s
         let effectText;
         if (b.autoClick) {
             const autoVal = count * GameState.clickValue;
             effectText = count > 0 ? `🖱️ ${fmt(autoVal)}/s 自動クリック` : '🖱️ 自動クリック';
+        } else if (b.autoTradeStocks) {
+            effectText = count > 0 ? `📊 ${count}取引/s 株式自動売買` : '📊 株式自動売買';
         } else if (b.autoTrade) {
-            effectText = count > 0 ? `🤖 ${count}取引/s 自動売買` : '🤖 自動売買';
+            effectText = count > 0 ? `🤖 ${count}取引/s 全資産自動売買` : '🤖 全資産自動売買';
         } else {
             const prod = count > 0 ? b.baseProduction * count * Math.pow(b.multiplier, count - 1) : 0;
             effectText = `+${fmt(prod)}/s`;
@@ -772,6 +775,28 @@ function tickMarket() {
     });
 }
 
+// ===== ニューハーフトレードエフェクト =====
+function showHeartFloat() {
+    const btn = document.getElementById('tokenButton');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const hearts = ['💕', '💗', '💖', '💓', '💝'];
+    const numHearts = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numHearts; i++) {
+        setTimeout(() => {
+            const float = document.createElement('div');
+            float.className = 'click-float heart-float';
+            float.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            const angle  = (Math.PI * 2 / numHearts) * i + (Math.random() - 0.5);
+            const radius = 20 + Math.random() * 40;
+            float.style.left = (rect.left + rect.width / 2 + Math.cos(angle) * radius) + 'px';
+            float.style.top  = (rect.top  + rect.height / 2 + Math.sin(angle) * radius - 10) + 'px';
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1100);
+        }, i * 120);
+    }
+}
+
 // ===== SNS自動クリックエフェクト =====
 function showAutoClickFloats(totalValue, count) {
     const btn = document.getElementById('tokenButton');
@@ -794,22 +819,65 @@ function showAutoClickFloats(totalValue, count) {
     }
 }
 
-// ===== 取引所 自動売買 =====
+// ===== 自動売買ヘルパー =====
+function autoTradeStock(s, label) {
+    const st = GameState.stocks[s.id];
+    if (st.history.length < 10) return false;
+    if (s.unlockCondition && !s.unlockCondition(GameState)) return false;
+
+    const recentMin  = Math.min(...st.history);
+    const recentMax  = Math.max(...st.history);
+    const buyThresh  = recentMin * 1.05;
+    const sellThresh = recentMax * 0.95;
+
+    if (st.price <= buyThresh && GameState.tokens >= st.price) {
+        GameState.tokens -= st.price;
+        st.owned++;
+        GameState.totalStockTraded += st.price;
+        // 自動売買通知はオフ
+        return true;
+    } else if (st.price >= sellThresh && st.owned > 0) {
+        const earned = st.price;
+        st.owned--;
+        GameState.tokens += earned;
+        GameState.totalTokensEarned += earned;
+        GameState.totalStockTraded += earned;
+        // 自動売買通知はオフ
+        return true;
+    }
+    return false;
+}
+
+// ===== 取引所・夜の株式ディーラー 自動売買 =====
 function autoTrade() {
+    // 夜の株式ディーラー: 株式のみ自動売買
+    const newhalfCount = GameState.buildings['newhalf']?.count ?? 0;
+    if (newhalfCount > 0) {
+        let stockTradesLeft = newhalfCount;
+        for (const s of STOCKS) {
+            if (stockTradesLeft <= 0) break;
+            if (autoTradeStock(s, '💃')) {
+                showHeartFloat();
+                stockTradesLeft--;
+            }
+        }
+    }
+
+    // 取引所: 暗号資産＋株式を全対象
     const exchangeCount = GameState.buildings['exchange']?.count ?? 0;
     if (exchangeCount === 0) return;
 
     let tradesLeft = exchangeCount;
 
-    // 全暗号資産を対象
+    // 暗号資産
     for (const c of CRYPTOS) {
         if (tradesLeft <= 0) break;
         if (c.unlockCondition && !c.unlockCondition(GameState)) continue;
         const cr = GameState.cryptos[c.id];
         if (cr.history.length < 10) continue;
 
-        const recentMin = Math.min(...cr.history);
-        const recentMax = Math.max(...cr.history);
+        const recentMin  = Math.min(...cr.history);
+        const recentMax  = Math.max(...cr.history);
         const buyThresh  = recentMin * 1.05;
         const sellThresh = recentMax * 0.95;
 
@@ -817,45 +885,22 @@ function autoTrade() {
             GameState.tokens -= cr.price;
             cr.owned++;
             GameState.totalStockTraded += cr.price;
-            showNotification(`🤖 自動買: ${c.icon}${c.name}`, 'auto-trade');
+            // 自動売買通知はオフ
             tradesLeft--;
         } else if (cr.price >= sellThresh && cr.owned > 0) {
             const earned = cr.price;
             cr.owned--;
             GameState.tokens += earned;
             GameState.totalTokensEarned += earned;
-            showNotification(`🤖 自動売: ${c.icon}${c.name} +${fmt(earned)}`, 'auto-trade');
+            // 自動売買通知はオフ
             tradesLeft--;
         }
     }
 
-    // 全株式を対象
+    // 株式
     for (const s of STOCKS) {
         if (tradesLeft <= 0) break;
-        if (s.unlockCondition && !s.unlockCondition(GameState)) continue;
-        const st = GameState.stocks[s.id];
-        if (st.history.length < 10) continue;
-
-        const recentMin = Math.min(...st.history);
-        const recentMax = Math.max(...st.history);
-        const buyThresh  = recentMin * 1.05;
-        const sellThresh = recentMax * 0.95;
-
-        if (st.price <= buyThresh && GameState.tokens >= st.price) {
-            GameState.tokens -= st.price;
-            st.owned++;
-            GameState.totalStockTraded += st.price;
-            showNotification(`🤖 自動買: ${s.icon}${s.name}`, 'auto-trade');
-            tradesLeft--;
-        } else if (st.price >= sellThresh && st.owned > 0) {
-            const earned = st.price;
-            st.owned--;
-            GameState.tokens += earned;
-            GameState.totalTokensEarned += earned;
-            GameState.totalStockTraded += earned;
-            showNotification(`🤖 自動売: ${s.icon}${s.name} +${fmt(earned)}`, 'auto-trade');
-            tradesLeft--;
-        }
+        if (autoTradeStock(s, '🤖')) tradesLeft--;
     }
 }
 
