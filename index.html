@@ -52,33 +52,36 @@
 
         <!-- メインゲームエリア -->
         <div class="game-area">
-            <!-- 左：実績パネル -->
-            <aside class="achievements-panel">
-                <div id="achievementsList"></div>
-            </aside>
-
-            <!-- 中央：クリッカーエリア -->
-            <main class="click-arena">
-                <div class="arena-content">
-                    <button class="token-button" id="tokenButton">
-                        <img src="Gemini_Generated_Image_kb6ju3kb6ju3kb6j.png" alt="すげぇトークン" class="token-image">
-                    </button>
-                    <div class="arena-stats">
-                        <div class="arena-stat-row">
-                            <span class="label">クリック値</span>
-                            <span class="value" id="clickValue">1</span>
-                        </div>
-                        <div class="arena-stat-row">
-                            <span class="label">毎秒</span>
-                            <span class="value" id="arenaPerSecond">0</span>
-                        </div>
-                        <div class="arena-stat-row">
-                            <span class="label">LEVEL</span>
-                            <span class="value" id="arenaLevel">1</span>
+            <!-- 左列：コイン＋実績 -->
+            <div class="left-column">
+                <!-- クリッカーエリア -->
+                <main class="click-arena">
+                    <div class="arena-content">
+                        <button class="token-button" id="tokenButton">
+                            <img src="Gemini_Generated_Image_kb6ju3kb6ju3kb6j.png" alt="すげぇトークン" class="token-image">
+                        </button>
+                        <div class="arena-stats">
+                            <div class="arena-stat-row">
+                                <span class="label">クリック</span>
+                                <span class="value" id="clickValue">1</span>
+                            </div>
+                            <div class="arena-stat-row">
+                                <span class="label">/秒</span>
+                                <span class="value" id="arenaPerSecond">0</span>
+                            </div>
+                            <div class="arena-stat-row">
+                                <span class="label">Lv</span>
+                                <span class="value" id="arenaLevel">1</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </main>
+                </main>
+
+                <!-- 実績パネル -->
+                <aside class="achievements-panel">
+                    <div id="achievementsList"></div>
+                </aside>
+            </div>
 
             <!-- 右パネル -->
             <aside class="right-panel">
@@ -103,7 +106,7 @@
                         </div>
                     </div>
                 </div>
-            </aside>
+            </aside><!-- right-panel -->
         </div>
 
         <!-- フッター -->
