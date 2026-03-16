@@ -1,0 +1,857 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-dark: #1a1a1a;
+    --bg-darker: #0f0f0f;
+    --panel-bg: #2a2a2a;
+    --panel-light: #333333;
+    --border-color: #404040;
+    --text-primary: #e0e0e0;
+    --text-secondary: #999999;
+    --accent-color: #4a9d6f;
+    --accent-light: #6cb896;
+    --button-color: #3d5c4f;
+    --success-color: #66bb6a;
+    --warn-color: #f57c00;
+}
+
+body {
+    background-color: var(--bg-darker);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-x: hidden;
+}
+
+/* ===== トレーダーコンテナ ===== */
+.trader-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-darker);
+    border: 1px solid var(--border-color);
+}
+
+/* ===== ヘッダー ===== */
+.trader-header {
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.game-title {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.header-right {
+    display: flex;
+    gap: 20px;
+}
+
+.status-bar {
+    display: flex;
+    gap: 15px;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.status-item .label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.status-item .value {
+    font-size: 1.1em;
+    color: var(--accent-light);
+    font-weight: bold;
+}
+
+/* ===== 情報バー ===== */
+.info-bar {
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 15px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.info-value {
+    font-size: 1.3em;
+    color: var(--accent-light);
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* ===== ゲームエリア ===== */
+.game-area {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 140px 200px 400px;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-darker);
+}
+
+/* ===== 実績パネル ===== */
+.achievements-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    overflow-y: auto;
+    max-height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    color: var(--accent-light);
+    font-weight: bold;
+    font-size: 0.75em;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.achievements-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    flex: 1;
+}
+
+.achievement-item {
+    background: var(--panel-light);
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    border-radius: 4px;
+    font-size: 1.6em;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.achievement-item:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.achievement-item:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel-bg);
+    border: 1px solid var(--accent-color);
+    padding: 6px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-size: 0.55em;
+    z-index: 1001;
+    color: var(--accent-light);
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+}
+
+.achievement-item.unlocked {
+    background: linear-gradient(135deg, var(--accent-color) 0%, rgba(74, 157, 111, 0.7) 100%);
+    color: #000;
+    font-weight: bold;
+    border-color: var(--accent-light);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 6px rgba(74, 157, 111, 0.3);
+}
+
+.achievement-item.unlocked:hover {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(74, 157, 111, 0.4);
+}
+
+.achievement-item.locked {
+    opacity: 0.5;
+    color: var(--text-secondary);
+}
+
+/* ===== 中央クリックエリア ===== */
+.click-arena {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    position: relative;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.arena-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.token-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #d4af37;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    pointer-events: none;
+}
+
+.token-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.token-button:hover {
+    transform: scale(1.05);
+}
+
+.token-button:active {
+    transform: scale(0.95);
+}
+
+.token-image:hover {
+    transform: scale(1.05);
+}
+
+.click-button {
+    width: 200px;
+    height: 80px;
+    background: linear-gradient(180deg, var(--button-color) 0%, #2a4238 100%);
+    border: 2px solid var(--accent-color);
+    color: var(--text-primary);
+    font-size: 1.4em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    border-radius: 4px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+
+.click-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(108, 184, 150, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+    pointer-events: none;
+}
+
+.click-button:hover {
+    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent-color) 100%);
+    color: #000;
+    box-shadow: 0 4px 16px rgba(74, 157, 111, 0.4);
+    transform: translateY(-2px);
+    border-color: var(--accent-light);
+}
+
+.click-button:active {
+    transform: scale(0.94) translateY(1px);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(74, 157, 111, 0.2);
+}
+
+.buy-button {
+    background: linear-gradient(180deg, var(--button-color) 0%, #2a4238 100%);
+    border: 1px solid var(--accent-color);
+    color: var(--text-primary);
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-radius: 3px;
+    padding: 6px 12px;
+    min-width: 50px;
+    text-align: center;
+}
+
+.buy-button:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent-color) 100%);
+    color: #000;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(74, 157, 111, 0.3);
+}
+
+.buy-button:active:not(:disabled) {
+    transform: scale(0.95);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.buy-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--panel-light);
+    color: var(--text-secondary);
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(102, 187, 106, 0.9);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards;
+    z-index: 1001;
+    pointer-events: none;
+    font-size: 0.9em;
+}
+
+.notification.purchase {
+    background: rgba(255, 237, 78, 0.9);
+    color: #000;
+}
+
+.notification.error {
+    background: rgba(231, 76, 60, 0.9);
+}
+
+.notification.click {
+    background: rgba(74, 157, 111, 0.9);
+}
+
+.notification.achievement {
+    background: rgba(255, 193, 7, 0.9);
+    color: #000;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.locked-preview {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.lock-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lock-icon {
+    font-size: 1.5em;
+}
+
+.unlock-progress {
+    flex: 1;
+    text-align: center;
+}
+
+.progress-bar {
+    height: 4px;
+    background: var(--accent-color);
+    border-radius: 2px;
+    margin-bottom: 4px;
+}
+
+.arena-stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 10px;
+    background: var(--panel-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.arena-stats .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.arena-stats .label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.arena-stats .value {
+    font-size: 1.5em;
+    color: var(--accent-light);
+    font-weight: bold;
+}
+
+/* ===== チャートパネル ===== */
+.chart-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#btcChart,
+#stockChart {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ===== アイテムカード ===== */
+.item-card {
+    background: var(--panel-light);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    margin-bottom: 6px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.item-card:hover {
+    background: var(--panel-bg);
+    border-color: var(--accent-color);
+}
+
+.item-card.unaffordable {
+    opacity: 0.5;
+    border-color: var(--border-color);
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: relative;
+}
+
+.item-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.item-description {
+    display: none;
+}
+
+.item-info:hover::after {
+    content: attr(data-description);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel-bg);
+    border: 1px solid var(--accent-color);
+    padding: 10px 14px;
+    border-radius: 4px;
+    white-space: normal;
+    font-size: 0.8em;
+    z-index: 1001;
+    color: var(--text-secondary);
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    max-width: 220px;
+    word-break: break-word;
+    margin-bottom: 8px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.item-effect {
+    color: var(--accent-light);
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.item-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.price-info {
+    text-align: right;
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.buy-button {
+    background: var(--button-color);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-color);
+    padding: 5px 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.75em;
+    transition: all 0.1s;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+
+.buy-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(108, 184, 150, 0.5);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.buy-button:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 0 0 12px rgba(74, 157, 111, 0.5);
+    transform: translateY(-2px);
+}
+
+.buy-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== ポートフォリオセクション ===== */
+.right-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.portfolio-section {
+    background: var(--panel-bg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.portfolio-header {
+    background: var(--panel-light);
+    padding: 8px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.portfolio-header h3 {
+    color: var(--accent-light);
+    font-size: 0.8em;
+    letter-spacing: 0.5px;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.shop-tabs-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+    padding: 10px;
+    background: var(--bg-dark);
+    border: none;
+    border-right: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.tab-button:last-child {
+    border-right: none;
+}
+
+.tab-button:hover {
+    background: var(--panel-light);
+    color: var(--accent-light);
+}
+
+.tab-button.active {
+    background: var(--panel-light);
+    color: var(--accent-light);
+    border-bottom: 2px solid var(--accent-color);
+}
+
+/* ===== ミニチャート ===== */
+.mini-chart {
+    width: 100%;
+    height: 80px;
+    background: var(--panel-light);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 12px;
+}
+
+.tab-panel {
+    padding: 10px 12px;
+    background: var(--bg-dark);
+    max-height: 400px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ===== スクロールバー ===== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ===== 通知 ===== */
+.notifications {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.notification {
+    background: var(--panel-light);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border: 1px solid var(--accent-color);
+    animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s backwards;
+    font-weight: 500;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(350px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(350px);
+        opacity: 0;
+    }
+}
+
+/* ===== フッター ===== */
+.trader-footer {
+    background: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
+    padding: 12px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.trader-footer p {
+    margin: 0;
+}
+
+/* ===== リスト ===== */
+.upgrades-list-full,
+.buildings-list-full,
+.crypto-list-full,
+.stocks-list-full {
+    display: grid;
+    gap: 10px;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 1200px) {
+    .game-area {
+        grid-template-columns: 140px 1fr 260px;
+    }
+
+    .info-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .game-area {
+        grid-template-columns: 1fr;
+    }
+
+    .achievements-panel {
+        order: -1;
+        max-height: 140px;
+    }
+
+    .chart-panel {
+        order: 1;
+    }
+
+    .game-title {
+        font-size: 1.4em;
+    }
+
+    .click-button {
+        width: 160px;
+        height: 60px;
+        font-size: 1.1em;
+    }
+
+    .coin-display {
+        width: 140px;
+        height: 140px;
+    }
+
+    .shop-tabs-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .trader-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .info-bar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    .game-title {
+        font-size: 1.2em;
+    }
+
+    .click-button {
+        width: 120px;
+        height: 50px;
+        font-size: 0.9em;
+    }
+
+    .coin-display {
+        width: 120px;
+        height: 120px;
+        font-size: 60px;
+    }
+
+    .shop-tabs-container {
+        grid-template-columns: 1fr;
+    }
+}

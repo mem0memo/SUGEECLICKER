@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>すげぇトークンクリッカー - 時間価値の人生ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="trader-container">
+        <!-- ヘッダー -->
+        <header class="trader-header">
+            <div class="header-left">
+                <h1 class="game-title">すげぇトークンクリッカー</h1>
+                <p class="subtitle">時間価値で稼ぐゲーム v1.0</p>
+            </div>
+            <div class="header-right">
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span class="label">DATE</span>
+                        <span class="value" id="current-date">2026/03/10</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">LEVEL</span>
+                        <span class="value" id="entrepreneurLevel">1</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 上部情報バー -->
+        <div class="info-bar">
+            <div class="info-item">
+                <span class="info-label">TOKENS</span>
+                <span class="info-value" id="tokenCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">PER/SEC</span>
+                <span class="info-value" id="perSecond">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">EARNED</span>
+                <span class="info-value" id="totalTokens">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">PORTFOLIO</span>
+                <span class="info-value" id="portfolioValue">0</span>
+            </div>
+        </div>
+
+        <!-- メインゲームエリア -->
+        <div class="game-area">
+            <!-- 左：実績パネル -->
+            <aside class="achievements-panel">
+                <div class="panel-header">実績</div>
+                <div class="achievements-list" id="achievementsList"></div>
+            </aside>
+
+            <!-- 中央：クリッカーエリア -->
+            <main class="click-arena">
+                <div class="arena-content">
+                    <button class="token-button" id="tokenButton">
+                        <img src="Gemini_Generated_Image_kb6ju3kb6ju3kb6j.png" alt="すげぇトークン" class="token-image">
+                    </button>
+                    <div class="arena-stats">
+                        <div class="stat">
+                            <span class="label">1クリック</span>
+                            <span class="value" id="clickValue">1</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右パネル -->
+            <aside class="right-panel">
+                <div class="portfolio-section">
+                    <div class="portfolio-header">
+                        <h3>ポートフォリオ</h3>
+                    </div>
+                    <div class="shop-tabs-container">
+                        <button class="tab-button active" data-tab="upgrades">スキル</button>
+                        <button class="tab-button" data-tab="buildings">施設</button>
+                        <button class="tab-button" data-tab="crypto">暗号資産</button>
+                        <button class="tab-button" data-tab="stocks">株式</button>
+                    </div>
+                    <div class="tab-panel">
+                        <div class="tab-content active" id="upgrades">
+                            <div class="upgrades-list-full" id="upgradesListFull"></div>
+                        </div>
+                        <div class="tab-content" id="buildings">
+                            <div class="buildings-list-full" id="buildingsListFull"></div>
+                        </div>
+                        <div class="tab-content" id="crypto">
+                            <div class="crypto-list-full" id="cryptoListFull"></div>
+                        </div>
+                        <div class="tab-content" id="stocks">
+                            <div class="stocks-list-full" id="stocksListFull"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- フッター -->
+        <footer class="trader-footer">
+            <p>SUGEE TOKEN CLICKER © 2026 | 時間価値で世界を支配する</p>
+        </footer>
+    </div>
+
+    <!-- 通知エリア -->
+    <div class="notifications" id="notifications"></div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
