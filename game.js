@@ -241,7 +241,7 @@ const ACHIEVEMENTS = [
       check: gs => (gs.buildings['sns']?.count ?? 0) >= 50,
       bonus: 1000 },
 
-    { id: 'building_500',   name: '千施設帝国',          icon: '🏙️', tier: 'legendary',
+    { id: 'building_500',   name: '五百施設帝国',         icon: '🏙️', tier: 'legendary',
       comment: 'もはや一個人の規模じゃない',       condition: '施設を合計500個購入',
       check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 500,
       bonus: 3000 },
@@ -338,7 +338,7 @@ function initBuildings() {
 function initCryptos() {
     CRYPTOS.forEach(c => {
         if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice], tradeVolume: 0 };
-            if (GameState.cryptos[c.id].tradeVolume === undefined) GameState.cryptos[c.id].tradeVolume = 0;
+        if (GameState.cryptos[c.id].tradeVolume === undefined) GameState.cryptos[c.id].tradeVolume = 0;
     });
 }
 
@@ -721,17 +721,24 @@ function autoTrade() {
         const sellThresh = recentMax * 0.95;
 
         if (cr.price <= buyThresh && GameState.tokens >= cr.price) {
-            GameState.tokens -= cr.price;
-            cr.owned++;
-            showHeartFloat();
-            tradesLeft--;
+            // 所持トークンで買えるだけ買う（tradesLeft上限）
+            const n = Math.min(tradesLeft, Math.floor(GameState.tokens / cr.price));
+            if (n > 0) {
+                GameState.tokens -= cr.price * n;
+                cr.owned += n;
+                cr.tradeVolume = (cr.tradeVolume || 0) + n;
+                tradesLeft -= n;
+                showHeartFloat();
+            }
         } else if (cr.price >= sellThresh && cr.owned > 0) {
-            const earned = cr.price;
-            cr.owned--;
-            GameState.tokens += earned;
-            GameState.totalTokensEarned += earned;
+            // 保有数をすべて売る（tradesLeft上限）
+            const n = Math.min(tradesLeft, cr.owned);
+            cr.owned -= n;
+            GameState.tokens += cr.price * n;
+            GameState.totalTokensEarned += cr.price * n;
+            cr.tradeVolume = (cr.tradeVolume || 0) + n;
+            tradesLeft -= n;
             showHeartFloat();
-            tradesLeft--;
         }
     }
 }
@@ -862,6 +869,7 @@ function sellCrypto(id, n = 1) {
     render();
     updateDisplay();
     showNotification(`${c.icon} ${c.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
+    checkAchievements();
 }
 
 // ===== 表示更新 =====
