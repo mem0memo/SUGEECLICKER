@@ -40,7 +40,7 @@ const BUILDINGS = [
     { id: 'mailmag',   name: '有料メルマガ',  desc: '月額課金で信者を囲い込め',            icon: '💌', basePrice: 200000,  baseProduction: 65,   multiplier: 1.15, unlockCondition: gs => (gs.buildings['blog']?.count ?? 0) >= 1 },
     { id: 'media',     name: 'メディア帝国',  desc: '情報は21世紀の石油',                  icon: '📺', basePrice: 400000,  baseProduction: 100,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['mailmag']?.count ?? 0) >= 1 },
     { id: 'salon',     name: '夜の社交場',    desc: '一杯飲んでちょめちょめ',              icon: '🌙', basePrice: 1500000, baseProduction: 300,  multiplier: 1.15, unlockCondition: gs => (gs.buildings['media']?.count ?? 0) >= 1 },
-    { id: 'newhalf',   name: 'ニューハーフ',  desc: '暗号資産自動売買。保有数=毎秒取引数', icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoCrypto: true,      unlockCondition: gs => (gs.buildings['salon']?.count ?? 0) >= 1 },
+    { id: 'newhalf',   name: 'ニューハーフ',  desc: '夜の顔を持つ敏腕トレーダー。保有数=毎秒取引数', icon: '💃', basePrice: 3500000, baseProduction: 0,    multiplier: 1.15, autoCrypto: true,      unlockCondition: gs => (gs.buildings['salon']?.count ?? 0) >= 1 },
 ];
 
 // ===== 暗号資産定義（4種）=====
@@ -659,7 +659,7 @@ function tickMarket() {
 
 }
 
-// ===== ニューハーフトレードエフェクト =====
+// ===== 俺に入れてもらうことできるか？ =====
 function showHeartFloat() {
     const btn = document.getElementById('tokenButton');
     if (!btn) return;
@@ -703,7 +703,7 @@ function showAutoClickFloats(totalValue, count) {
     }
 }
 
-// ===== ニューハーフ 暗号資産自動売買 =====
+// ===== 敏腕トレーダー 暗号資産自動売買 =====
 function autoTrade() {
     const newhalfCount = GameState.buildings['newhalf']?.count ?? 0;
     if (newhalfCount === 0) return;
