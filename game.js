@@ -78,16 +78,16 @@ const CRYPTOS = [
     {
         id: 'sugee',
         name: 'すげぇトークン',
-        desc: '時間を価値に変える謎の通貨\n保有数 × 20/秒を生産',
+        desc: '時間を価値に変える謎の通貨\n保有数 × 50/秒を生産\n相場が激しい',
         icon: '⏰',
         basePrice: 400000,
-        production: 20,
-        trendStrength: 80000,
-        noise: 60000,
-        minPrice: 40000,
-        bearBias: 0.48,
-        unlockCondition: gs => (gs.buildings['blog']?.count ?? 0) >= 2,
-        unlockDesc: 'ブログポータルを2個購入で解放',
+        production: 50,
+        trendStrength: 220000,
+        noise: 160000,
+        minPrice: 15000,
+        bearBias: 0.46,
+        unlockCondition: gs => (gs.buildings['mailmag']?.count ?? 0) >= 10,
+        unlockDesc: '有料メルマガを10個購入で解放',
     },
     {
         id: 'sanao',
@@ -106,122 +106,165 @@ const CRYPTOS = [
 ];
 
 
-// ===== 実績定義（25種・施設→取引→実績の流れ）=====
+// ===== 一括取引ティア =====
+// unlockAt: その銘柄の累計取引数（買い＋売り）が達したら解放
+const TRADE_TIERS = [
+    { amount: 1,             unlockAt: 0 },
+    { amount: 10,            unlockAt: 0 },
+    { amount: 100,           unlockAt: 0 },
+    { amount: 1000,          unlockAt: 1000 },
+    { amount: 10000,         unlockAt: 10000 },
+    { amount: 100000,        unlockAt: 100000 },
+    { amount: 1000000,       unlockAt: 1000000 },
+    { amount: 10000000,      unlockAt: 10000000 },
+    { amount: 100000000,     unlockAt: 100000000 },
+    { amount: 1000000000,    unlockAt: 1000000000 },
+    { amount: 10000000000,   unlockAt: 10000000000 },
+    { amount: 100000000000,  unlockAt: 100000000000 },
+];
+
+// 取引ティア用の単位表示（万・億・兆）
+function fmtTier(n) {
+    if (n >= 1e12) return (n / 1e12) + '兆';
+    if (n >= 1e8)  return (n / 1e8)  + '億';
+    if (n >= 1e7)  return (n / 1e7)  + '千万';
+    if (n >= 1e4)  return (n / 1e4)  + '万';
+    if (n >= 1e3)  return (n / 1e3)  + '千';
+    return String(n);
+}
+
+// ===== 実績定義（26種）=====
+// tier: 'easy'(緑) / 'normal'(青) / 'hard'(紫) / 'legendary'(金)
 const ACHIEVEMENTS = [
-    // ===== ゲーム開始 =====
-    { id: 'first_click',    name: '最初のクリック',      icon: '🖱️',
+    // ===== Easy: 序盤10分で解除できるもの =====
+    { id: 'first_click',    name: '最初のクリック',      icon: '🖱️', tier: 'easy',
       comment: '伝説の始まり',                      condition: '1回クリック',
       check: gs => gs.totalTokensEarned > 0,        bonus: 0 },
 
-    // ===== 施設系（序盤）=====
-    { id: 'veggie_start',   name: '農業への目覚め',      icon: '🥬',
-      comment: '土を触ったことはないけど',          condition: '野菜農園を1000個購入',
-      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1000,
+    { id: 'first_farm',     name: '農業への目覚め',      icon: '🥬', tier: 'easy',
+      comment: '土を触ったことはないけど',          condition: '野菜農園を1個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1,
       bonus: 2 },
 
-    { id: 'wagyu_owner',    name: '和牛オーナー',        icon: '🐄',
-      comment: '高級和牛で差をつけろ',              condition: '和牛農場を500個購入',
-      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 500,
+    { id: 'first_wagyu',    name: '和牛オーナーの卵',    icon: '🐄', tier: 'easy',
+      comment: 'とりあえず1頭から始めよう',         condition: '和牛農場を1個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 1,
       bonus: 3 },
 
-    { id: 'sns_start',      name: '配信デビュー',        icon: '📱',
-      comment: '毎日更新が信者を作る',              condition: 'SNS配信局を200個購入',
-      check: gs => (gs.buildings['sns']?.count ?? 0) >= 200,
-      bonus: 6 },
+    { id: 'token_10k',      name: '１万の男',            icon: '💴', tier: 'easy',
+      comment: '１万も大事にしない奴に10億は来ない', condition: '累計1万トークン',
+      check: gs => gs.totalTokensEarned >= 10000,   bonus: 5 },
 
-    { id: 'health_start',   name: 'R入り初舞台',         icon: '🎤',
-      comment: '笑いを取れた瞬間、世界が変わった', condition: 'お笑いプロダクションを100個購入',
-      check: gs => (gs.buildings['health']?.count ?? 0) >= 100,
+    // ===== Normal: 序盤〜中盤で解除 =====
+    { id: 'health_start',   name: 'R入り初舞台',         icon: '🎤', tier: 'normal',
+      comment: '笑いを取れた瞬間、世界が変わった', condition: 'お笑いプロダクションを1個購入',
+      check: gs => (gs.buildings['health']?.count ?? 0) >= 1,
       bonus: 10 },
 
-    // ===== 施設系（中盤）=====
-    { id: 'building_15',    name: '施設コレクター',      icon: '🏗️',
-      comment: 'まだまだ規模が足りない',            condition: '施設を合計100個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 100,
-      bonus: 25 },
+    { id: 'sns_start',      name: '配信デビュー',        icon: '📱', tier: 'normal',
+      comment: '毎日更新が信者を作る',              condition: 'SNS配信局を10個購入',
+      check: gs => (gs.buildings['sns']?.count ?? 0) >= 10,
+      bonus: 15 },
 
-    { id: 'wagyu_ranch',    name: '和牛農場の拡大',      icon: '🥩',
-      comment: 'サシが入るまで育てろ',              condition: '和牛農場を100個購入',
-      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 100,
+    { id: 'wagyu_ranch',    name: '和牛農場の拡大',      icon: '🥩', tier: 'normal',
+      comment: 'サシが入るまで育てろ',              condition: '和牛農場を25個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 25,
+      bonus: 40 },
+
+    { id: 'building_50',    name: '施設コレクター',      icon: '🏗️', tier: 'normal',
+      comment: 'まだまだ規模が足りない',            condition: '施設を合計50個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 50,
       bonus: 60 },
 
-    { id: 'blog_empire',    name: 'ブログの帝王',        icon: '📝',
-      comment: '某社に先を越されたが負けてない',    condition: 'ブログポータルを50個購入',
-      check: gs => (gs.buildings['blog']?.count ?? 0) >= 50,
-      bonus: 200 },
+    { id: 'token_100k',     name: '最初の壁',            icon: '💵', tier: 'normal',
+      comment: '10万なんてケタが違う（そうでもない）', condition: '累計10万トークン',
+      check: gs => gs.totalTokensEarned >= 100000,  bonus: 50 },
 
-    { id: 'rocket_mass',    name: 'ロケット量産体制',    icon: '🚀',
-      comment: '空を見上げるな、宇宙を見ろ',       condition: 'ロケット工場を80個購入',
-      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 80,
-      bonus: 300 },
+    { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐', tier: 'normal',
+      comment: 'すごくはないが、ないよりマシ',      condition: 'すごくないトークンを50個保有',
+      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 50,
+      bonus: 80 },
 
-    { id: 'salon_legend',   name: '夜の伝説',            icon: '🌙',
-      comment: '一杯飲んでちょめちょめ（詳細不明）', condition: '夜の社交場を30個購入',
-      check: gs => (gs.buildings['salon']?.count ?? 0) >= 30,
-      bonus: 600 },
-
-    { id: 'night_diversity', name: '夜の多様な出会い',   icon: '💃',
-      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: 'ニューハーフを50人雇用',
-      check: gs => (gs.buildings['newhalf']?.count ?? 0) >= 50,
-      bonus: 1200 },
-
-    { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤',
+    // ===== Hard: 中盤〜後半で解除 =====
+    { id: 'comedy_king',    name: 'R入り王者',           icon: '🎤', tier: 'hard',
       comment: '一芸で笑いを取ったら起業家より稼げた', condition: 'お笑いプロダクションを100個購入',
       check: gs => (gs.buildings['health']?.count ?? 0) >= 100,
       bonus: 400 },
 
-    // ===== 施設系（後半）=====
-    { id: 'media_empire',   name: 'メディア完全制覇',    icon: '📺',
+    { id: 'rocket_mass',    name: 'ロケット量産体制',    icon: '🚀', tier: 'hard',
+      comment: '空を見上げるな、宇宙を見ろ',       condition: 'ロケット工場を50個購入',
+      check: gs => (gs.buildings['rocket']?.count ?? 0) >= 50,
+      bonus: 300 },
+
+    { id: 'blog_empire',    name: 'ブログの帝王',        icon: '📝', tier: 'hard',
+      comment: '某社に先を越されたが負けてない',    condition: 'ブログポータルを50個購入',
+      check: gs => (gs.buildings['blog']?.count ?? 0) >= 50,
+      bonus: 500 },
+
+    { id: 'media_empire',   name: 'メディア完全制覇',    icon: '📺', tier: 'hard',
       comment: '全チャンネルで俺の顔を流せ',       condition: 'メディア帝国を50個購入',
       check: gs => (gs.buildings['media']?.count ?? 0) >= 50,
       bonus: 800 },
 
-    { id: 'exchange_open',  name: '取引所開設',          icon: '💹',
-      comment: '銀行は時代遅れ。論破',              condition: '取引所を20個購入',
-      check: gs => (gs.buildings['exchange']?.count ?? 0) >= 20,
-      bonus: 1000 },
+    { id: 'building_100',   name: '百施設帝国',          icon: '🏙️', tier: 'hard',
+      comment: '個人の限界を超えた',               condition: '施設を合計100個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 100,
+      bonus: 200 },
 
-    { id: 'veggie_farm',    name: '野菜王国の礎',        icon: '🌾',
+    { id: 'millionaire',    name: 'ミリオネア',          icon: '💰', tier: 'hard',
+      comment: '金は時間で稼ぐ。論破！',           condition: '累計100万トークン',
+      check: gs => gs.totalTokensEarned >= 1000000, bonus: 150 },
+
+    { id: 'salon_legend',   name: '夜の伝説',            icon: '🌙', tier: 'hard',
+      comment: '一杯飲んでちょめちょめ（詳細不明）', condition: '夜の社交場を10個購入',
+      check: gs => (gs.buildings['salon']?.count ?? 0) >= 10,
+      bonus: 600 },
+
+    // ===== Legendary: 長時間プレイで解除 =====
+    { id: 'night_diversity', name: '夜の多様な出会い',   icon: '💃', tier: 'legendary',
+      comment: '多様な人脈が人間力を磨く。偏見は時代遅れ', condition: 'ニューハーフを50人雇用',
+      check: gs => (gs.buildings['newhalf']?.count ?? 0) >= 50,
+      bonus: 1200 },
+
+    { id: 'veggie_farm',    name: '野菜王国の礎',        icon: '🌾', tier: 'legendary',
       comment: 'ニンジンで世界征服',               condition: '野菜農園を200個購入',
       check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 200,
-      bonus: 150 },
+      bonus: 500 },
 
-    { id: 'building_100',   name: '千施設帝国',          icon: '🏙️',
-      comment: 'もはや一個人の規模じゃない',       condition: '施設を合計1000個購入',
-      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 1000,
+    { id: 'wagyu_owner',    name: '和牛オーナー',        icon: '🥩', tier: 'legendary',
+      comment: '高級和牛で差をつけろ',             condition: '和牛農場を100個購入',
+      check: gs => (gs.buildings['wagyu']?.count ?? 0) >= 100,
+      bonus: 800 },
+
+    { id: 'sns_master',     name: 'SNS制圧',             icon: '📱', tier: 'legendary',
+      comment: 'フォロワー無限。もはや国民皆フォロワー', condition: 'SNS配信局を50個購入',
+      check: gs => (gs.buildings['sns']?.count ?? 0) >= 50,
+      bonus: 1000 },
+
+    { id: 'building_500',   name: '千施設帝国',          icon: '🏙️', tier: 'legendary',
+      comment: 'もはや一個人の規模じゃない',       condition: '施設を合計500個購入',
+      check: gs => Object.values(gs.buildings).reduce((a, b) => a + b.count, 0) >= 500,
       bonus: 3000 },
 
-    // ===== トークン累計系 =====
-    { id: 'token_100k',     name: '最初の壁',            icon: '💴',
-      comment: '10万なんてケタが違う（そうでもない）', condition: '累計10万トークン',
-      check: gs => gs.totalTokensEarned >= 100000,
-      bonus: 30 },
-
-    { id: 'millionaire',    name: 'ミリオネア',          icon: '💰',
-      comment: '金は時間で稼ぐ。論破！',           condition: '累計100万トークン',
-      check: gs => gs.totalTokensEarned >= 1000000,
-      bonus: 150 },
-
-    { id: 'billionaire',    name: '億り人',              icon: '💎',
+    { id: 'billionaire',    name: '億り人',              icon: '💎', tier: 'legendary',
       comment: 'ようやくスタートライン',            condition: '累計1億トークン',
       check: gs => gs.totalTokensEarned >= 100000000,
       bonus: 1500 },
 
-    { id: 'ex_con_ceo',     name: '前科持ち社長',        icon: '⛓️',
+    { id: 'ex_con_ceo',     name: '前科持ち社長',        icon: '⛓️', tier: 'legendary',
       comment: '塀の中で多くを学んだ（自称）',     condition: '累計10億トークン',
       check: gs => gs.totalTokensEarned >= 1000000000,
       bonus: 6000 },
 
-    // ===== 暗号資産系 =====
-    { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐',
-      comment: 'すごくはないが、ないよりマシ',     condition: 'すごくないトークンを50個保有',
-      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 50,
-      bonus: 30 },
-
-    { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀',
+    { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀', tier: 'legendary',
       comment: '買えたのか…なぜ？',               condition: 'サナオトークンを50個保有',
       check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 50,
       bonus: 10000 },
+
+    { id: 'veggie_godhand', name: '農業革命',            icon: '🥬', tier: 'legendary',
+      comment: '一人で農業を変えた男。規模がおかしい', condition: '野菜農園を1000個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1000,
+      bonus: 5000 },
 ];
 
 // ===== 初期化 =====
@@ -268,7 +311,8 @@ function loadData() {
             if (!GameState.buildings[b.id]) GameState.buildings[b.id] = { count: 0 };
         });
         CRYPTOS.forEach(c => {
-            if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice] };
+            if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice], tradeVolume: 0 };
+            if (GameState.cryptos[c.id].tradeVolume === undefined) GameState.cryptos[c.id].tradeVolume = 0;
         });
     } catch (e) {
         console.error('Load data error:', e);
@@ -293,7 +337,8 @@ function initBuildings() {
 
 function initCryptos() {
     CRYPTOS.forEach(c => {
-        if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice] };
+        if (!GameState.cryptos[c.id]) GameState.cryptos[c.id] = { owned: 0, price: c.basePrice, history: [c.basePrice], tradeVolume: 0 };
+            if (GameState.cryptos[c.id].tradeVolume === undefined) GameState.cryptos[c.id].tradeVolume = 0;
     });
 }
 
@@ -354,14 +399,17 @@ function renderAchievements() {
     el.innerHTML = '';
     const grid = document.createElement('div');
     grid.className = 'ach-grid';
+    const tierLabel = { easy: '⭐ かんたん', normal: '⭐⭐ ふつう', hard: '⭐⭐⭐ むずかしい', legendary: '👑 レジェンダリー' };
     ACHIEVEMENTS.forEach(ach => {
         const unlocked = GameState.unlockedAchievements.includes(ach.id);
+        const tier = ach.tier || 'normal';
         const item = document.createElement('div');
-        item.className = `achievement-item ${unlocked ? 'unlocked' : 'locked'}`;
+        item.className = `achievement-item tier-${tier} ${unlocked ? 'unlocked' : 'locked'}`;
         item.textContent = unlocked ? ach.icon : '🔒';
+        const label = tierLabel[tier] || '';
         const tooltip = unlocked
-            ? `${ach.name}\n${ach.comment}\n条件: ${ach.condition}`
-            : `???\n条件: ${maskLockedNames(ach.condition)}`;
+            ? `${ach.name}\n${ach.comment}\n条件: ${ach.condition}\n${label}`
+            : `???\n条件: ${maskLockedNames(ach.condition)}\n${label}`;
         item.setAttribute('data-tooltip', tooltip);
         grid.appendChild(item);
     });
@@ -510,6 +558,20 @@ function renderCrypto() {
         const pct    = cr.history.length > 1 ? ((change / prev) * 100).toFixed(1) : 0;
         const trendColor = change >= 0 ? '#4caf50' : '#f44336';
 
+        const volume = cr.tradeVolume || 0;
+        const unlockedTiers = TRADE_TIERS.filter(t => volume >= t.unlockAt);
+        const nextTier = TRADE_TIERS.find(t => volume < t.unlockAt);
+
+        const buyBtnsHTML = unlockedTiers.map(t =>
+            `<button class="buy-button" data-amount="${t.amount}" ${GameState.tokens < cr.price * t.amount ? 'disabled' : ''}>×${fmtTier(t.amount)}<span class="btn-price">${fmt(cr.price * t.amount)}</span></button>`
+        ).join('');
+        const sellBtnsHTML = unlockedTiers.map(t =>
+            `<button class="sell-button" data-amount="${t.amount}" ${cr.owned < t.amount ? 'disabled' : ''}>×${fmtTier(t.amount)}<span class="btn-price">${fmt(cr.price * t.amount)}</span></button>`
+        ).join('');
+        const progressHTML = nextTier
+            ? `<div class="trade-progress">🔒 次の解放: ×${fmtTier(nextTier.amount)} まであと ${fmtTier(nextTier.unlockAt - volume)} 回取引</div>`
+            : '';
+
         card.className = 'item-card trade-card';
         card.setAttribute('data-tooltip', c.desc);
         card.innerHTML = `
@@ -523,29 +585,20 @@ function renderCrypto() {
             <div class="item-trade">
                 <div class="trade-row">
                     <span class="trade-label buy-label">買</span>
-                    <div class="buy-group">
-                        <button class="buy-button"  ${GameState.tokens < cr.price     ? 'disabled' : ''}>×1<span class="btn-price">${fmt(cr.price)}</span></button>
-                        <button class="buy-button"  ${GameState.tokens < cr.price*10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(cr.price*10)}</span></button>
-                        <button class="buy-button"  ${GameState.tokens < cr.price*100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(cr.price*100)}</span></button>
-                    </div>
+                    <div class="buy-group">${buyBtnsHTML}</div>
                 </div>
                 <div class="trade-row">
                     <span class="trade-label sell-label">売</span>
-                    <div class="buy-group">
-                        <button class="sell-button" ${cr.owned < 1   ? 'disabled' : ''}>×1<span class="btn-price">${fmt(cr.price)}</span></button>
-                        <button class="sell-button" ${cr.owned < 10  ? 'disabled' : ''}>×10<span class="btn-price">${fmt(cr.price*10)}</span></button>
-                        <button class="sell-button" ${cr.owned < 100 ? 'disabled' : ''}>×100<span class="btn-price">${fmt(cr.price*100)}</span></button>
-                    </div>
+                    <div class="buy-group">${sellBtnsHTML}</div>
                 </div>
+                ${progressHTML}
             </div>`;
-        const buyBtns  = card.querySelectorAll('.buy-button');
-        const sellBtns = card.querySelectorAll('.sell-button');
-        buyBtns[0].onclick  = () => buyCrypto(c.id, 1);
-        buyBtns[1].onclick  = () => buyCrypto(c.id, 10);
-        buyBtns[2].onclick  = () => buyCrypto(c.id, 100);
-        sellBtns[0].onclick = () => sellCrypto(c.id, 1);
-        sellBtns[1].onclick = () => sellCrypto(c.id, 10);
-        sellBtns[2].onclick = () => sellCrypto(c.id, 100);
+        card.querySelectorAll('.buy-button').forEach(btn => {
+            btn.onclick = () => buyCrypto(c.id, parseInt(btn.dataset.amount));
+        });
+        card.querySelectorAll('.sell-button').forEach(btn => {
+            btn.onclick = () => sellCrypto(c.id, parseInt(btn.dataset.amount));
+        });
         el.appendChild(card);
     });
 }
@@ -776,6 +829,13 @@ function buyCrypto(id, n = 1) {
     if (GameState.tokens >= price) {
         GameState.tokens -= price;
         cr.owned += n;
+        const prev = cr.tradeVolume || 0;
+        cr.tradeVolume = prev + n;
+        for (const tier of TRADE_TIERS) {
+            if (tier.unlockAt > 0 && prev < tier.unlockAt && cr.tradeVolume >= tier.unlockAt) {
+                showNotification(`🔓 ${c.icon} ×${fmtTier(tier.amount)} 一括取引 解放！`, 'achievement');
+            }
+        }
         render();
         showNotification(`${c.icon} ${c.name} ×${n} 購入`, 'purchase');
         checkAchievements();
@@ -792,6 +852,13 @@ function sellCrypto(id, n = 1) {
     cr.owned -= n;
     GameState.tokens += earned;
     GameState.totalTokensEarned += earned;
+    const prev = cr.tradeVolume || 0;
+    cr.tradeVolume = prev + n;
+    for (const tier of TRADE_TIERS) {
+        if (tier.unlockAt > 0 && prev < tier.unlockAt && cr.tradeVolume >= tier.unlockAt) {
+            showNotification(`🔓 ${c.icon} ×${fmtTier(tier.amount)} 一括取引 解放！`, 'achievement');
+        }
+    }
     render();
     updateDisplay();
     showNotification(`${c.icon} ${c.name} ×${n} 売却 +${fmt(earned)}`, 'sell');
