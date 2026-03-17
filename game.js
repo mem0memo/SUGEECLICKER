@@ -180,9 +180,9 @@ const ACHIEVEMENTS = [
       comment: '10万なんてケタが違う（そうでもない）', condition: '累計10万トークン',
       check: gs => gs.totalTokensEarned >= 100000,  bonus: 50 },
 
-    { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐', tier: 'normal',
-      comment: 'すごくはないが、ないよりマシ',      condition: 'すごくないトークンを50個保有',
-      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 50,
+    { id: 'maamaa_5',       name: 'まあまあ保有',        icon: '😐', tier: 'hard',
+      comment: 'すごくはないが、ないよりマシ',      condition: 'すごくないトークンを200個保有',
+      check: gs => (gs.cryptos['maamaa']?.owned ?? 0) >= 200,
       bonus: 80 },
 
     // ===== Hard: 中盤〜後半で解除 =====
@@ -257,13 +257,13 @@ const ACHIEVEMENTS = [
       bonus: 6000 },
 
     { id: 'sanao_miracle',  name: '奇跡の入手',          icon: '🌀', tier: 'legendary',
-      comment: '買えたのか…なぜ？',               condition: 'サナオトークンを50個保有',
-      check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 50,
+      comment: '買えたのか…なぜ？',               condition: 'サナオトークンを100個保有',
+      check: gs => (gs.cryptos['sanao']?.owned ?? 0) >= 100,
       bonus: 10000 },
 
     { id: 'veggie_godhand', name: '農業革命',            icon: '🥬', tier: 'legendary',
-      comment: '一人で農業を変えた男。規模がおかしい', condition: '野菜農園を1000個購入',
-      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 1000,
+      comment: '一人で農業を変えた男。えらい！', condition: '野菜農園を500個購入',
+      check: gs => (gs.buildings['vegetable']?.count ?? 0) >= 500,
       bonus: 5000 },
 ];
 
