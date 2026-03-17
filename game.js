@@ -708,10 +708,12 @@ function autoTrade() {
     const newhalfCount = GameState.buildings['newhalf']?.count ?? 0;
     if (newhalfCount === 0) return;
 
-    let tradesLeft = newhalfCount;
-    for (const c of CRYPTOS) {
-        if (tradesLeft <= 0) break;
-        if (c.unlockCondition && !c.unlockCondition(GameState)) continue;
+    // 解放済み銘柄に均等に取引枠を配分
+    const unlocked = CRYPTOS.filter(c => !c.unlockCondition || c.unlockCondition(GameState));
+    if (unlocked.length === 0) return;
+    const perCrypto = Math.max(1, Math.floor(newhalfCount / unlocked.length));
+
+    for (const c of unlocked) {
         const cr = GameState.cryptos[c.id];
         if (cr.history.length < 10) continue;
 
@@ -721,23 +723,21 @@ function autoTrade() {
         const sellThresh = recentMax * 0.95;
 
         if (cr.price <= buyThresh && GameState.tokens >= cr.price) {
-            // 所持トークンで買えるだけ買う（tradesLeft上限）
-            const n = Math.min(tradesLeft, Math.floor(GameState.tokens / cr.price));
+            // 所持トークンで買えるだけ買う（perCrypto上限）
+            const n = Math.min(perCrypto, Math.floor(GameState.tokens / cr.price));
             if (n > 0) {
                 GameState.tokens -= cr.price * n;
                 cr.owned += n;
                 cr.tradeVolume = (cr.tradeVolume || 0) + n;
-                tradesLeft -= n;
                 showHeartFloat();
             }
         } else if (cr.price >= sellThresh && cr.owned > 0) {
-            // 保有数をすべて売る（tradesLeft上限）
-            const n = Math.min(tradesLeft, cr.owned);
+            // 保有数をすべて売る（perCrypto上限）
+            const n = Math.min(perCrypto, cr.owned);
             cr.owned -= n;
             GameState.tokens += cr.price * n;
             GameState.totalTokensEarned += cr.price * n;
             cr.tradeVolume = (cr.tradeVolume || 0) + n;
-            tradesLeft -= n;
             showHeartFloat();
         }
     }
