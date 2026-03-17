@@ -1,29 +1,21 @@
-# すげぇトークンクリッカー
+# SUGEE Token Clicker
 
-クッキークリッカー風のインクリメンタルゲーム。
-某起業家をモチーフにした、コメディ路線の起業シミュレーター。
+A browser-based incremental clicker game.
 
-## 遊び方
+## How to Play
 
-`index.html` をブラウザで直接開くだけで動きます。
+Open `index.html` in your browser. No installation required.
 
-1. コインをクリックしてトークンを獲得
-2. 施設を購入して毎秒自動生産
-3. 暗号資産を売買して資産を増やす
-4. 実績を解除してクリック値を強化
+## Save / Reset
 
-施設・暗号資産・実績の詳細はゲーム内で確認してください。
+- **Auto-save**: progress is stored in `localStorage`
+- **Reset**: F12 → Application → Local Storage → delete `game` → reload
 
-## セーブ・リセット
+## Requirements
 
-- **自動セーブ**: `localStorage` に定期保存
-- **リセット**: F12 → Application → Local Storage → `game` を削除 → リロード
+- Chrome / Firefox / Safari / Edge (latest)
+- PC and mobile supported
 
-## 動作環境
+## Tech
 
-- Chrome / Firefox / Safari / Edge（最新版）
-- PC・スマートフォン対応
-
-## 技術
-
-HTML + CSS + Vanilla JS（フレームワークなし）
+HTML + CSS + Vanilla JS
